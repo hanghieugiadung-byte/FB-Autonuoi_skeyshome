@@ -1,13 +1,25 @@
 import { supabase } from '../supabaseClient';
 import { Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
-import type { AdminUser, SystemSettings } from '../../shared/types';
+import type { AdminUser, PermissionKey, SystemSettings } from '../../shared/types';
 import { saveAuthToken } from '../utils/authToken';
 
 interface LoginViewProps {
   systemSettings: SystemSettings | null;
   onLoginSuccess: (payload: { user: AdminUser; systemSettings: SystemSettings }) => void;
 }
+
+const ALL_PERMISSIONS: PermissionKey[] = [
+  'view_dashboard',
+  'manage_fb_accounts',
+  'manage_nurture',
+  'manage_publisher',
+  'run_group_finder',
+  'run_scanner',
+  'manage_ai_rag',
+  'manage_safety',
+  'manage_system_admin',
+];
 
 export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
   const [username, setUsername] = useState('admin@socialpulse.vn');
@@ -19,7 +31,7 @@ export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    
+
     if (!username.trim() || !password) {
       setErrorMsg('Vui lòng nhập đầy đủ Email/Tên đăng nhập và Mật khẩu.');
       return;
@@ -27,7 +39,6 @@ export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
 
     setSubmitting(true);
     try {
-      // 1. Gọi Supabase để xác thực tài khoản
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username.trim(),
         password: password,
@@ -38,32 +49,64 @@ export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
         return;
       }
 
-      // 2. Lưu token xác thực phiên làm việc
       if (data.session) {
         saveAuthToken(data.session.access_token);
       }
 
-      // 3. Tự động nhận diện và gán đúng quyền (Role) chữ IN HOA cho hệ thống
+      // 1. SỬA QUAN TRỌNG: Gán Role là CHỮ IN HOA để khớp với bảng tra cứu rs[i.role] của Dashboard
       const emailLower = username.toLowerCase();
-      const userRole = emailLower.includes('manager') ? 'MANAGER' : 
-                       emailLower.includes('operator') ? 'OPERATOR' : 'ADMIN';
+      const userRole = emailLower.includes('manager')
+        ? 'MANAGER'
+        : emailLower.includes('operator')
+        ? 'OPERATOR'
+        : 'ADMIN';
 
+      const userPermissions: PermissionKey[] =
+        userRole === 'ADMIN'
+          ? ALL_PERMISSIONS
+          : userRole === 'MANAGER'
+          ? ALL_PERMISSIONS.filter((p) => p !== 'manage_system_admin')
+          : ['view_dashboard', 'manage_nurture', 'manage_publisher', 'run_scanner'];
+
+      const now = new Date().toISOString();
+
+      // 2. Ép kiểu "as unknown as AdminUser" để TypeScript cho phép truyền chữ in hoa mà không báo lỗi biên dịch
       const loggedInUser = {
         id: data.user?.id || '1',
-        email: data.user?.email || username.trim(),
         username: username.trim(),
-        role: userRole, // Đảm bảo quyền in hoa khớp với logic app cũ
-        fullName: userRole === 'ADMIN' ? 'Quản trị viên' : userRole === 'MANAGER' ? 'Quản lý' : 'Nhân viên vận hành',
-        status: 'active'
-      } as AdminUser;
+        fullName:
+          userRole === 'ADMIN'
+            ? 'Quản trị viên Hệ thống'
+            : userRole === 'MANAGER'
+            ? 'Quản lý Vận hành'
+            : 'Nhân viên Vận hành',
+        role: userRole,
+        permissions: userPermissions,
+        active: true,
+        lastLoginAt: now,
+        createdAt: now,
+      } as unknown as AdminUser;
 
-      // 4. Chuyển hướng vào trong ứng dụng
-      onLoginSuccess({ 
-        user: loggedInUser, 
-        systemSettings: systemSettings || ({} as SystemSettings) 
+      const fullSystemSettings: SystemSettings = systemSettings || {
+        id: 1,
+        workspaceName: 'SocialPulse FB',
+        companyName: 'Hệ thống Social Listening & Marketing Automation',
+        defaultTimezone: 'Asia/Ho_Chi_Minh',
+        maxConcurrentWorkers: 5,
+        aiModelName: 'gemini-2.5-flash',
+        autoSchedulerEnabled: true,
+        requireApprovalBeforePost: false,
+        maintenanceMode: false,
+        defaultProxyPool: 'http://127.0.0.1:8080',
+        sessionTimeoutHours: 24,
+        updatedAt: now,
+      };
+
+      onLoginSuccess({
+        user: loggedInUser,
+        systemSettings: fullSystemSettings,
       });
-
-    } catch (err: any) {
+    } catch {
       setErrorMsg('Không thể kết nối tới máy chủ xác thực.');
     } finally {
       setSubmitting(false);
