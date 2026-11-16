@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import type {
-  AdminUser,
   DashboardSnapshot,
   FacebookAccount,
   FacebookGroup,
@@ -29,7 +28,6 @@ import { Sidebar, type NavTab } from './components/Sidebar';
 import { SystemAdminView } from './components/SystemAdminView';
 import { TopBar } from './components/TopBar';
 import { apiFetch, buildAuthUrl, clearAuthToken } from './utils/authToken';
-import { canUserAccess } from './utils/rbac';
 
 interface StarterScript {
   filename: string;
@@ -40,7 +38,7 @@ interface StarterScript {
 
 export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
@@ -69,11 +67,11 @@ export default function App() {
       .then((data) => {
         if (cancelled || !data) return;
         setSystemSettings(data.systemSettings ?? null);
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
+        if (data.authenticated) {
+          setIsUnlocked(true);
         } else {
           clearAuthToken();
-          setCurrentUser(null);
+          setIsUnlocked(false);
         }
       })
       .catch(() => undefined)
@@ -99,7 +97,7 @@ export default function App() {
 
     if (dashRes.status === 401) {
       clearAuthToken();
-      setCurrentUser(null);
+      setIsUnlocked(false);
       return;
     }
 
@@ -141,7 +139,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!isUnlocked) return;
 
     fetchAllData();
 
@@ -175,34 +173,12 @@ export default function App() {
       evtSource.close();
       setSseConnected(false);
     };
-  }, [currentUser?.id, fetchAllData]);
+  }, [isUnlocked, fetchAllData]);
 
-  useEffect(() => {
-    if (!currentUser) return;
-    const tabPermissionMap: Partial<Record<NavTab, Parameters<typeof canUserAccess>[1]>> = {
-      dashboard: 'view_dashboard',
-      accounts: 'manage_fb_accounts',
-      nurture: 'manage_nurture',
-      'auto-publisher': 'manage_publisher',
-      'group-finder': 'run_group_finder',
-      'keyword-scanner': 'run_scanner',
-      'ai-content': 'manage_ai_rag',
-      'safety-optimize': 'manage_safety',
-    };
-    const needed = tabPermissionMap[activeTab];
-    if (needed && !canUserAccess(currentUser, needed)) {
-      if (canUserAccess(currentUser, 'view_dashboard')) {
-        setActiveTab('dashboard');
-      } else {
-        setActiveTab('system-admin');
-      }
-    }
-  }, [activeTab, currentUser]);
-
-  const handleLogout = async () => {
+  const handleLockApp = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     clearAuthToken();
-    setCurrentUser(null);
+    setIsUnlocked(false);
     setSnapshot(null);
     setActiveTab('dashboard');
   };
@@ -562,29 +538,29 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center p-6">
-        <div className="text-sm font-medium text-slate-700">
-          Đang kiểm tra phiên đăng nhập hệ thống...
+      <div className="min-h-screen bg-white text-black flex items-center justify-center p-6">
+        <div className="text-sm font-semibold text-black">
+          Đang khởi tạo bảo mật hệ thống...
         </div>
       </div>
     );
   }
 
-  if (!currentUser) {
+  if (!isUnlocked) {
     return (
       <LoginView
         systemSettings={systemSettings}
-        onLoginSuccess={({ user, systemSettings: nextSettings }) => {
-          setCurrentUser(user);
+        onUnlockSuccess={({ systemSettings: nextSettings }) => {
           setSystemSettings(nextSettings);
-          setActiveTab(canUserAccess(user, 'view_dashboard') ? 'dashboard' : 'system-admin');
+          setIsUnlocked(true);
+          setActiveTab('dashboard');
         }}
       />
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-white text-slate-900">
+    <div className="min-h-screen flex bg-white text-black">
       <Sidebar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -595,9 +571,8 @@ export default function App() {
         activeAccountsCount={activeAccountsCount}
         fanpagesCount={fanpages.length}
         scheduledPostsCount={scheduledPostsCount}
-        currentUser={currentUser}
         workspaceName={systemSettings?.workspaceName}
-        onLogout={handleLogout}
+        onLockApp={handleLockApp}
       />
 
       <div className="flex-1 min-w-0 flex flex-col bg-white">
@@ -606,32 +581,11 @@ export default function App() {
           onSelectTab={setActiveTab}
           onOpenMobileMenu={() => setMobileOpen(true)}
           onPrimaryAction={() => setActiveTab('group-finder')}
-          currentUser={currentUser}
           workspaceName={systemSettings?.workspaceName}
-          onLogout={handleLogout}
+          onLockApp={handleLockApp}
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto bg-white">
-          {systemSettings?.maintenanceMode && (
-            <div
-              role="status"
-              className="mb-5 px-4 py-3 rounded-xl bg-white border-2 border-amber-400 text-xs font-semibold text-amber-900 flex items-center justify-between gap-3"
-            >
-              <span>
-                Chế độ Bảo trì đang BẬT — Các tài khoản không phải Admin tạm thời bị hạn chế thao tác.
-              </span>
-              {canUserAccess(currentUser, 'manage_system_admin') && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('system-admin')}
-                  className="text-blue-700 hover:underline shrink-0"
-                >
-                  Tắt trong Quản trị Hệ thống →
-                </button>
-              )}
-            </div>
-          )}
-
           {activeTab === 'dashboard' && (
             <DashboardView
               snapshot={snapshot}
@@ -737,9 +691,9 @@ export default function App() {
 
           {activeTab === 'system-admin' && (
             <SystemAdminView
-              currentUser={currentUser}
               systemSettings={systemSettings}
               onSystemSettingsUpdated={setSystemSettings}
+              onLockApp={handleLockApp}
             />
           )}
         </main>

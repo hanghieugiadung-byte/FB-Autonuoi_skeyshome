@@ -37,10 +37,10 @@ export function DashboardView({
       <div className="space-y-6" aria-busy="true">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-28 rounded-xl bg-white border border-slate-200 animate-pulse" />
+            <div key={i} className="h-28 rounded-xl bg-white border border-neutral-300 animate-pulse" />
           ))}
         </div>
-        <div className="h-72 rounded-xl bg-white border border-slate-200 animate-pulse" />
+        <div className="h-72 rounded-xl bg-white border border-neutral-300 animate-pulse" />
       </div>
     );
   }
@@ -64,107 +64,107 @@ export function DashboardView({
 
   return (
     <div className="space-y-6">
-      {/* Distinct Color-Coded KPI Cards */}
+      {/* Crisp White KPI Cards with Prominent Blue & Red Highlights */}
       <section aria-label="Chỉ số tổng quan">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="bg-white border border-teal-200 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-300 border-t-2 border-t-blue-600 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-xs font-semibold text-teal-700">Group đã quét</div>
-                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-slate-900">
+                <div className="text-xs font-bold text-blue-700">Group đã quét</div>
+                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-black">
                   {formatNumberVi(totals.groupsScanned)}
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
                 <Users className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-emerald-700 font-medium tabular-nums">
+            <div className="mt-3 pt-3 border-t border-neutral-200 flex items-center justify-between text-xs">
+              <span className="text-neutral-900 font-semibold tabular-nums">
                 {totals.noApprovalGroups} đăng không cần duyệt
               </span>
               <button
                 type="button"
                 onClick={() => onNavigate('group-finder')}
-                className="font-semibold text-teal-700 hover:underline whitespace-nowrap"
+                className="font-bold text-blue-700 hover:underline whitespace-nowrap"
               >
                 Chi tiết →
               </button>
             </div>
           </div>
 
-          <div className="bg-white border border-indigo-200 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-300 border-t-2 border-t-red-600 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-xs font-semibold text-indigo-700">Tài khoản song song</div>
-                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-slate-900">
+                <div className="text-xs font-bold text-red-700">Tài khoản song song</div>
+                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-black">
                   {formatNumberVi(totals.activeAccounts)}
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
                 <UserCheck className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-600 tabular-nums">
+            <div className="mt-3 pt-3 border-t border-neutral-200 flex items-center justify-between text-xs">
+              <span className="text-neutral-900 font-semibold tabular-nums">
                 {totals.runningAccounts} đang chạy · {totals.keywordsTracked} keyword
               </span>
               <button
                 type="button"
                 onClick={() => onNavigate('accounts')}
-                className="font-semibold text-indigo-700 hover:underline whitespace-nowrap"
+                className="font-bold text-red-700 hover:underline whitespace-nowrap"
               >
                 Quản lý →
               </button>
             </div>
           </div>
 
-          <div className="bg-white border border-amber-200 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-300 border-t-2 border-t-blue-600 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-xs font-semibold text-amber-700">Bài &amp; Comment quét</div>
-                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-slate-900">
+                <div className="text-xs font-bold text-blue-700">Bài &amp; Comment quét</div>
+                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-black">
                   {formatNumberVi(totals.postsCollected + totals.commentsCollected)}
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
                 <Radar className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-600 tabular-nums">
+            <div className="mt-3 pt-3 border-t border-neutral-200 flex items-center justify-between text-xs">
+              <span className="text-neutral-900 font-semibold tabular-nums">
                 {totals.postsCollected} Post · {totals.commentsCollected} Comment
               </span>
               <button
                 type="button"
                 onClick={() => onNavigate('keyword-scanner')}
-                className="font-semibold text-amber-700 hover:underline whitespace-nowrap"
+                className="font-bold text-blue-700 hover:underline whitespace-nowrap"
               >
                 Quét mới →
               </button>
             </div>
           </div>
 
-          <div className="bg-white border border-violet-200 rounded-xl p-5 flex flex-col justify-between">
+          <div className="bg-white border border-neutral-300 border-t-2 border-t-red-600 rounded-xl p-5 flex flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-xs font-semibold text-violet-700">AI Content &amp; Duyệt</div>
-                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-slate-900">
+                <div className="text-xs font-bold text-red-700">AI Content &amp; Duyệt</div>
+                <div className="mt-1.5 font-mono tabular-nums text-3xl font-bold text-black">
                   {formatNumberVi(totals.aiRepliesGenerated)}
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
                 <BotMessageSquare className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-violet-700 font-medium tabular-nums">
+            <div className="mt-3 pt-3 border-t border-neutral-200 flex items-center justify-between text-xs">
+              <span className="text-neutral-900 font-semibold tabular-nums">
                 {totals.approvedAutoComments} đã Approve
               </span>
               <button
                 type="button"
                 onClick={() => onNavigate('ai-content')}
-                className="font-semibold text-violet-700 hover:underline whitespace-nowrap"
+                className="font-bold text-red-700 hover:underline whitespace-nowrap"
               >
                 Xưởng AI →
               </button>
@@ -172,18 +172,18 @@ export function DashboardView({
           </div>
         </div>
 
-        {/* New Feature KPI Strip: Ads Warmup & AI Auto-Publisher */}
+        {/* Ads Warmup & AI Auto-Publisher Strip */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="bg-white border border-rose-200 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="bg-white border border-red-600 rounded-xl p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
                 <Flame className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-semibold text-rose-700">
+                <div className="text-xs font-bold text-red-700">
                   Tài nguyên Nuôi Ads (Nick FB &amp; Fanpage)
                 </div>
-                <div className="text-sm text-slate-900 font-semibold mt-0.5 font-mono tabular-nums">
+                <div className="text-sm text-black font-bold mt-0.5 font-mono tabular-nums">
                   {formatNumberVi(totals.fanpagesCount)} Fanpage ·{' '}
                   {formatNumberVi(totals.adsReadyAssetsCount)} sẵn sàng chạy Ads
                 </div>
@@ -192,22 +192,22 @@ export function DashboardView({
             <button
               type="button"
               onClick={() => onNavigate('nurture')}
-              className="text-xs font-semibold text-rose-700 hover:underline whitespace-nowrap shrink-0"
+              className="text-xs font-bold text-red-700 hover:underline whitespace-nowrap shrink-0"
             >
               Nuôi Nick &amp; Page →
             </button>
           </div>
 
-          <div className="bg-white border border-sky-200 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="bg-white border border-blue-600 rounded-xl p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="h-10 w-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
                 <CalendarClock className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-semibold text-sky-700">
+                <div className="text-xs font-bold text-blue-700">
                   Lịch Tự động Đăng bài AI (Đa kênh)
                 </div>
-                <div className="text-sm text-slate-900 font-semibold mt-0.5 font-mono tabular-nums">
+                <div className="text-sm text-black font-bold mt-0.5 font-mono tabular-nums">
                   {formatNumberVi(totals.scheduledPostsCount)} bài chờ lịch ·{' '}
                   {formatNumberVi(totals.publishedPostsCount)} bài đã đăng
                 </div>
@@ -216,7 +216,7 @@ export function DashboardView({
             <button
               type="button"
               onClick={() => onNavigate('auto-publisher')}
-              className="text-xs font-semibold text-sky-700 hover:underline whitespace-nowrap shrink-0"
+              className="text-xs font-bold text-blue-700 hover:underline whitespace-nowrap shrink-0"
             >
               Lên lịch AI →
             </button>
@@ -226,42 +226,42 @@ export function DashboardView({
 
       {/* Charts Row */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6" aria-label="Biểu đồ phân tích">
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-6 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white border border-neutral-300 rounded-xl p-6 flex flex-col justify-between">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="font-display text-base font-semibold text-slate-900">
+              <h2 className="font-display text-base font-bold text-black">
                 Lượng bài đăng &amp; comment theo ngày
               </h2>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <p className="text-xs text-neutral-800 mt-0.5">
                 Phân tách giữa bài viết gốc (Post) và bình luận (Comment) thu thập từ Group
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs text-slate-600">
+            <div className="flex items-center gap-4 text-xs font-semibold text-black">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-xs bg-blue-600" aria-hidden="true" />
                 <span>Bài đăng (Post)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-xs bg-amber-500" aria-hidden="true" />
+                <span className="h-2.5 w-2.5 rounded-xs bg-red-600" aria-hidden="true" />
                 <span>Bình luận (Comment)</span>
               </span>
             </div>
           </div>
 
           {dailySeries.length === 0 ? (
-            <div className="h-52 flex items-center justify-center text-sm text-slate-500 border border-dashed border-slate-200 rounded-lg">
+            <div className="h-52 flex items-center justify-center text-sm text-neutral-800 border border-dashed border-neutral-300 rounded-lg">
               Chưa có dữ liệu bài đăng theo ngày. Hãy chạy Module 2 để thu thập.
             </div>
           ) : (
             <div className="relative pl-7">
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-6 bottom-7 flex flex-col justify-between text-[11px] font-mono tabular-nums text-slate-400"
+                className="pointer-events-none absolute inset-x-0 top-6 bottom-7 flex flex-col justify-between text-[11px] font-mono tabular-nums text-neutral-800"
               >
-                <div className="flex items-center gap-2 border-b border-dashed border-slate-200/80 pb-0.5">
+                <div className="flex items-center gap-2 border-b border-dashed border-neutral-300 pb-0.5">
                   <span className="w-5 text-right">{maxDailyTotal}</span>
                 </div>
-                <div className="flex items-center gap-2 border-b border-dashed border-slate-200/80 pb-0.5">
+                <div className="flex items-center gap-2 border-b border-dashed border-neutral-300 pb-0.5">
                   <span className="w-5 text-right">
                     {Number.isInteger(maxDailyTotal / 2)
                       ? maxDailyTotal / 2
@@ -273,7 +273,7 @@ export function DashboardView({
                 </div>
               </div>
 
-              <div className="relative h-52 flex items-end justify-between gap-3 pt-6 pb-0 border-b border-slate-200">
+              <div className="relative h-52 flex items-end justify-between gap-3 pt-6 pb-0 border-b border-neutral-300">
                 {dailySeries.map((point, idx) => {
                   const postHeightPct = Math.round((point.posts / maxDailyTotal) * 100);
                   const commentHeightPct = Math.round((point.comments / maxDailyTotal) * 100);
@@ -286,7 +286,7 @@ export function DashboardView({
                       className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative group"
                     >
                       {isHovered && (
-                        <div className="absolute -top-2 z-10 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md whitespace-nowrap font-mono tabular-nums shadow-sm pointer-events-none">
+                        <div className="absolute -top-2 z-10 bg-black text-white text-xs px-2.5 py-1 rounded-md whitespace-nowrap font-mono tabular-nums shadow-sm pointer-events-none">
                           {point.date}: {point.posts} Post · {point.comments} Comment
                         </div>
                       )}
@@ -297,7 +297,7 @@ export function DashboardView({
                           title={`Posts: ${point.posts}`}
                         />
                         <div
-                          className="w-4 bg-amber-500 rounded-t transition-all duration-200"
+                          className="w-4 bg-red-600 rounded-t transition-all duration-200"
                           style={{
                             height: `${Math.max(commentHeightPct, point.comments > 0 ? 8 : 0)}%`,
                           }}
@@ -312,7 +312,7 @@ export function DashboardView({
                 {dailySeries.map((point) => (
                   <div
                     key={point.date}
-                    className="flex-1 text-center font-mono tabular-nums text-xs text-slate-500"
+                    className="flex-1 text-center font-mono tabular-nums text-xs font-medium text-neutral-900"
                   >
                     {point.date}
                   </div>
@@ -323,18 +323,18 @@ export function DashboardView({
         </div>
 
         {/* Keyword Distribution Chart */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6">
+        <div className="lg:col-span-5 bg-white border border-neutral-300 rounded-xl p-6">
           <div className="mb-5">
-            <h2 className="font-display text-base font-semibold text-slate-900">
+            <h2 className="font-display text-base font-bold text-black">
               Phân bổ theo từ khóa mục tiêu
             </h2>
-            <p className="text-xs text-slate-600 mt-0.5">
+            <p className="text-xs text-neutral-800 mt-0.5">
               Số lượng tín hiệu khách hàng khớp theo từng từ khóa
             </p>
           </div>
 
           {keywordSeries.length === 0 ? (
-            <div className="h-52 flex items-center justify-center text-sm text-slate-500 border border-dashed border-slate-200 rounded-lg">
+            <div className="h-52 flex items-center justify-center text-sm text-neutral-800 border border-dashed border-neutral-300 rounded-lg">
               Chưa có dữ liệu từ khóa.
             </div>
           ) : (
@@ -343,21 +343,20 @@ export function DashboardView({
                 const widthPct = Math.round((item.count / maxKeywordCount) * 100);
                 const barColors = [
                   'bg-blue-600',
-                  'bg-teal-600',
-                  'bg-amber-500',
-                  'bg-violet-600',
+                  'bg-red-600',
+                  'bg-black',
                 ];
                 return (
                   <div key={item.keyword} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-800 truncate pr-3">
+                      <span className="font-semibold text-black truncate pr-3">
                         {item.keyword}
                       </span>
-                      <span className="font-mono tabular-nums text-slate-600 shrink-0">
+                      <span className="font-mono tabular-nums font-semibold text-neutral-900 shrink-0">
                         {item.count} kết quả
                       </span>
                     </div>
-                    <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2.5 w-full bg-neutral-200 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${barColors[idx % barColors.length]} rounded-full transition-all duration-300`}
                         style={{ width: `${Math.max(widthPct, 6)}%` }}
@@ -375,30 +374,30 @@ export function DashboardView({
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 space-y-6">
           {/* Active Streams Status */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 bg-white border-b border-slate-200 border-l-4 border-l-blue-600 flex items-center justify-between gap-4">
+          <div className="bg-white border border-neutral-300 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 bg-white border-b border-neutral-300 flex items-center justify-between gap-4">
               <div>
-                <h2 className="font-display text-base font-semibold text-slate-900">
+                <h2 className="font-display text-base font-bold text-black">
                   Trạng thái luồng cào dữ liệu &amp; tự động hóa
                 </h2>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-neutral-800 mt-0.5">
                   Cập nhật trực tiếp qua Server-Sent Events (SSE)
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs font-medium">
+              <div className="flex items-center gap-2 text-xs font-bold">
                 <span
-                  className={`h-2 w-2 rounded-full ${
-                    sseConnected ? 'bg-emerald-600' : 'bg-amber-500'
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    sseConnected ? 'bg-blue-600' : 'bg-red-600'
                   }`}
                   aria-hidden="true"
                 />
-                <span className={sseConnected ? 'text-emerald-700' : 'text-amber-700'}>
+                <span className={sseConnected ? 'text-blue-700' : 'text-red-700'}>
                   {sseConnected ? 'Realtime đang kết nối' : 'Đang kết nối lại...'}
                 </span>
               </div>
             </div>
 
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-neutral-200">
               {streams.map((stream) => {
                 const isRunning = stream.status === 'running';
                 const isPaused = stream.status === 'paused';
@@ -412,16 +411,16 @@ export function DashboardView({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className="text-sm font-medium text-slate-900">
+                        <span className="text-sm font-bold text-black">
                           {stream.name}
                         </span>
                         <span
-                          className={`inline-flex items-center gap-1 text-xs font-medium ${
+                          className={`inline-flex items-center gap-1 text-xs font-bold ${
                             isRunning
-                              ? 'text-emerald-700'
+                              ? 'text-blue-700'
                               : isPaused
-                                ? 'text-amber-700'
-                                : 'text-slate-500'
+                                ? 'text-red-700'
+                                : 'text-neutral-700'
                           }`}
                         >
                           <Activity className="h-3.5 w-3.5" />
@@ -430,20 +429,20 @@ export function DashboardView({
                           </span>
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 mt-1 truncate">
+                      <p className="text-xs text-neutral-800 mt-1 truncate">
                         {stream.currentAction}
                       </p>
                       {stream.total > 0 && (
                         <div className="mt-2 flex items-center gap-3">
-                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full transition-all duration-300 ${
-                                isRunning ? 'bg-blue-600' : 'bg-slate-400'
+                                isRunning ? 'bg-blue-600' : 'bg-black'
                               }`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <span className="font-mono tabular-nums text-xs text-slate-500 shrink-0">
+                          <span className="font-mono tabular-nums text-xs font-semibold text-black shrink-0">
                             {stream.progress}/{stream.total}
                           </span>
                         </div>
@@ -457,7 +456,7 @@ export function DashboardView({
                             type="button"
                             onClick={() => onToggleStream(stream.id, 'pause')}
                             aria-label={`Tạm dừng ${stream.name}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 text-xs font-semibold text-black hover:border-blue-600 whitespace-nowrap shrink-0"
                           >
                             <Pause className="h-3.5 w-3.5" />
                             <span>Tạm dừng</span>
@@ -466,7 +465,7 @@ export function DashboardView({
                             type="button"
                             onClick={() => onToggleStream(stream.id, 'stop')}
                             aria-label={`Dừng hẳn ${stream.name}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-xs font-medium text-red-700 hover:bg-red-50 whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-600 text-xs font-bold text-red-700 hover:bg-red-600 hover:text-white transition-colors whitespace-nowrap shrink-0"
                           >
                             <Square className="h-3.5 w-3.5" />
                             <span>Dừng</span>
@@ -485,7 +484,7 @@ export function DashboardView({
                             else onNavigate('ai-content');
                           }}
                           aria-label={`Mở điều khiển ${stream.name}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-600 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white transition-colors whitespace-nowrap shrink-0"
                         >
                           <Play className="h-3.5 w-3.5" />
                           <span>Cấu hình &amp; Chạy</span>
@@ -499,20 +498,20 @@ export function DashboardView({
           </div>
 
           {/* Parallel Facebook Accounts Status */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 bg-white border-b border-slate-200 border-l-4 border-l-indigo-600 flex items-center justify-between gap-4">
-              <h2 className="font-display text-base font-semibold text-slate-900">
+          <div className="bg-white border border-neutral-300 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 bg-white border-b border-neutral-300 flex items-center justify-between gap-4">
+              <h2 className="font-display text-base font-bold text-black">
                 Cụm Tài khoản Facebook chạy song song
               </h2>
               <button
                 type="button"
                 onClick={() => onNavigate('accounts')}
-                className="text-xs font-semibold text-indigo-700 hover:underline whitespace-nowrap shrink-0"
+                className="text-xs font-bold text-blue-700 hover:underline whitespace-nowrap shrink-0"
               >
                 Thêm / Cấu hình →
               </button>
             </div>
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-neutral-200">
               {accounts.map((acc) => (
                 <div
                   key={acc.id}
@@ -520,14 +519,14 @@ export function DashboardView({
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">{acc.name}</span>
+                      <span className="font-bold text-black">{acc.name}</span>
                       <span
-                        className={`font-medium ${
+                        className={`font-bold ${
                           acc.workerStatus === 'running'
-                            ? 'text-emerald-700'
+                            ? 'text-red-700'
                             : acc.enabled
-                              ? 'text-indigo-700'
-                              : 'text-slate-400'
+                              ? 'text-blue-700'
+                              : 'text-neutral-700'
                         }`}
                       >
                         ·{' '}
@@ -538,9 +537,9 @@ export function DashboardView({
                             : 'Đang tắt'}
                       </span>
                     </div>
-                    <div className="text-slate-500 mt-0.5 truncate">{acc.currentTask}</div>
+                    <div className="text-neutral-800 mt-0.5 truncate">{acc.currentTask}</div>
                   </div>
-                  <div className="font-mono tabular-nums text-slate-600 shrink-0">
+                  <div className="font-mono tabular-nums font-semibold text-black shrink-0">
                     Join {acc.joinsToday}/{acc.maxJoinsPerDay} · Cmt {acc.commentsToday}/
                     {acc.maxCommentsPerDay}
                   </div>
@@ -551,31 +550,31 @@ export function DashboardView({
         </div>
 
         {/* Daily Safety Quota & Recent Activity */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-6 py-4 bg-white border-b border-slate-200 border-l-4 border-l-emerald-600 flex items-center justify-between gap-4">
-            <h2 className="font-display text-base font-semibold text-slate-900">
+        <div className="lg:col-span-5 bg-white border border-neutral-300 rounded-xl overflow-hidden flex flex-col">
+          <div className="px-6 py-4 bg-white border-b border-neutral-300 flex items-center justify-between gap-4">
+            <h2 className="font-display text-base font-bold text-black">
               Hạn mức an toàn hôm nay
             </h2>
             <button
               type="button"
               onClick={() => onNavigate('safety-optimize')}
-              className="text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap shrink-0"
+              className="text-xs font-bold text-red-700 hover:underline whitespace-nowrap shrink-0"
             >
               Điều chỉnh
             </button>
           </div>
 
-          <div className="px-6 py-4 space-y-4 border-b border-slate-200">
+          <div className="px-6 py-4 space-y-4 border-b border-neutral-300">
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-600">Auto-Join Group (hôm nay)</span>
-                <span className="font-mono tabular-nums font-medium text-slate-900">
+                <span className="font-semibold text-black">Auto-Join Group (hôm nay)</span>
+                <span className="font-mono tabular-nums font-bold text-black">
                   {usageToday.joinsCount} / {safetyConfig.maxJoinsPerDay}
                 </span>
               </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-teal-600 rounded-full"
+                  className="h-full bg-blue-600 rounded-full"
                   style={{
                     width: `${Math.min(
                       100,
@@ -588,14 +587,14 @@ export function DashboardView({
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-600">Bình luận Auto-Comment (hôm nay)</span>
-                <span className="font-mono tabular-nums font-medium text-slate-900">
+                <span className="font-semibold text-black">Bình luận Auto-Comment (hôm nay)</span>
+                <span className="font-mono tabular-nums font-bold text-black">
                   {usageToday.commentsCount} / {safetyConfig.maxCommentsPerDay}
                 </span>
               </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-600 rounded-full"
+                  className="h-full bg-red-600 rounded-full"
                   style={{
                     width: `${Math.min(
                       100,
@@ -606,33 +605,29 @@ export function DashboardView({
               </div>
             </div>
 
-            <div className="text-xs text-slate-500 flex items-center justify-between pt-1">
+            <div className="text-xs font-medium text-neutral-900 flex items-center justify-between pt-1">
               <span>
                 Khung giờ hoạt động: {safetyConfig.activeStartHour}:00 –{' '}
                 {safetyConfig.activeEndHour}:00
               </span>
-              <span className="font-mono">{safetyConfig.accountWarmupStage}</span>
+              <span className="font-mono font-bold text-blue-700">{safetyConfig.accountWarmupStage}</span>
             </div>
           </div>
 
-          <div className="px-6 py-3 bg-white text-xs font-semibold text-slate-800 border-b border-slate-200">
+          <div className="px-6 py-3 bg-white text-xs font-bold text-black border-b border-neutral-300">
             Nhật ký thực thi gần nhất
           </div>
-          <div className="divide-y divide-slate-200 flex-1 overflow-y-auto max-h-80">
+          <div className="divide-y divide-neutral-200 flex-1 overflow-y-auto max-h-80">
             {recentLogs.slice(0, 8).map((log) => (
               <div key={log.id} className="px-6 py-3 flex items-start gap-2.5 text-xs">
                 {log.level === 'error' || log.level === 'warning' ? (
-                  <AlertTriangle
-                    className={`h-4 w-4 shrink-0 mt-0.5 ${
-                      log.level === 'error' ? 'text-red-600' : 'text-amber-600'
-                    }`}
-                  />
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-600" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-blue-600" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-slate-900 leading-relaxed">{log.message}</div>
-                  <div className="text-slate-600 mt-0.5 font-mono tabular-nums">
+                  <div className="text-black leading-relaxed font-medium">{log.message}</div>
+                  <div className="text-neutral-700 mt-0.5 font-mono tabular-nums">
                     {log.module} · {formatShortDateTime(log.createdAt)}
                   </div>
                 </div>

@@ -1,87 +1,8 @@
 import crypto from 'node:crypto';
-import type { PermissionKey, UserRole } from '../../shared/types.ts';
 
-export const ALL_PERMISSIONS: Array<{
-  key: PermissionKey;
-  label: string;
-  description: string;
-}> = [
-  {
-    key: 'view_dashboard',
-    label: 'Xem Dashboard Báo cáo',
-    description: 'Xem thống kê realtime, biểu đồ và nhật ký hoạt động',
-  },
-  {
-    key: 'manage_fb_accounts',
-    label: 'Quản lý Tài khoản FB',
-    description: 'Thêm, bật/tắt, xóa tài khoản Facebook & cấu hình Proxy/Cookie',
-  },
-  {
-    key: 'manage_nurture',
-    label: 'Nuôi Nick & Fanpage Ads',
-    description: 'Tạo Profile mẫu, tạo Fanpage mới và chạy phiên nuôi Trust',
-  },
-  {
-    key: 'manage_publisher',
-    label: 'Lịch Đăng bài AI',
-    description: 'Gọi AI viết bài, lên lịch đăng & đăng ngay lên FB/Fanpage',
-  },
-  {
-    key: 'run_group_finder',
-    label: 'Tìm kiếm & Join Group',
-    description: 'Tìm Group theo từ khóa, Auto-Join Public và xóa tập dữ liệu',
-  },
-  {
-    key: 'run_scanner',
-    label: 'Quét Nội dung & Comment',
-    description: 'Chạy/dừng luồng quét bài viết và comment trong Group',
-  },
-  {
-    key: 'manage_ai_rag',
-    label: 'AI Content & Kho RAG',
-    description: 'Tải lên tài liệu đa phương tiện, sinh trả lời AI & duyệt Auto-Comment',
-  },
-  {
-    key: 'manage_safety',
-    label: 'Cấu hình An toàn & UTM',
-    description: 'Thay đổi giới hạn Anti-Ban, delay và cấu hình UTM tracking',
-  },
-  {
-    key: 'manage_system_admin',
-    label: 'Quản trị Hệ thống & Phân quyền',
-    description: 'Quản lý User, cấp Role/quyền hạn và thiết lập hệ thống',
-  },
-];
-
-export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, PermissionKey[]> = {
-  admin: ALL_PERMISSIONS.map((p) => p.key),
-  manager: [
-    'view_dashboard',
-    'manage_fb_accounts',
-    'manage_nurture',
-    'manage_publisher',
-    'run_group_finder',
-    'run_scanner',
-    'manage_ai_rag',
-    'manage_safety',
-  ],
-  operator: [
-    'view_dashboard',
-    'manage_nurture',
-    'manage_publisher',
-    'run_group_finder',
-    'run_scanner',
-    'manage_ai_rag',
-  ],
-  viewer: ['view_dashboard'],
-};
-
-export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: 'Quản trị viên (Admin)',
-  manager: 'Quản lý Chiến dịch',
-  operator: 'Nhân viên Vận hành',
-  viewer: 'Chỉ xem Báo cáo',
-};
+export const DEFAULT_APP_PASSCODE = '8889';
+export const MIN_PASSCODE_LENGTH = 4;
+export const MAX_PASSCODE_LENGTH = 64;
 
 export function hashPassword(password: string, existingSalt?: string): string {
   const salt = existingSalt || crypto.randomBytes(16).toString('hex');
@@ -100,29 +21,28 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   return crypto.timingSafeEqual(actualBuf, expectedBuf);
 }
 
+export function validatePasscode(rawPasscode: string): { ok: boolean; passcode: string; error?: string } {
+  const passcode = String(rawPasscode ?? '').trim();
+  if (!passcode) {
+    return { ok: false, passcode: '', error: 'Vui lòng nhập mật mã truy cập.' };
+  }
+  if (passcode.length < MIN_PASSCODE_LENGTH) {
+    return {
+      ok: false,
+      passcode,
+      error: `Mật mã truy cập phải có tối thiểu ${MIN_PASSCODE_LENGTH} ký tự.`,
+    };
+  }
+  if (passcode.length > MAX_PASSCODE_LENGTH) {
+    return {
+      ok: false,
+      passcode,
+      error: `Mật mã truy cập không được vượt quá ${MAX_PASSCODE_LENGTH} ký tự.`,
+    };
+  }
+  return { ok: true, passcode };
+}
+
 export function generateSessionToken(): string {
   return crypto.randomBytes(32).toString('hex');
-}
-
-export function parseCookieValue(cookieHeader: string | undefined, name: string): string | null {
-  if (!cookieHeader) return null;
-  const pairs = cookieHeader.split(';');
-  for (const pair of pairs) {
-    const idx = pair.indexOf('=');
-    if (idx === -1) continue;
-    const key = pair.slice(0, idx).trim();
-    if (key === name) {
-      return decodeURIComponent(pair.slice(idx + 1).trim());
-    }
-  }
-  return null;
-}
-
-export function userHasPermission(
-  user: { role: UserRole; permissions: PermissionKey[]; active: boolean } | null | undefined,
-  permission: PermissionKey
-): boolean {
-  if (!user || !user.active) return false;
-  if (user.role === 'admin') return true;
-  return user.permissions.includes(permission);
 }

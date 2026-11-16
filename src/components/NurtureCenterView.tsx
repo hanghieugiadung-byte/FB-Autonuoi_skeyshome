@@ -289,17 +289,17 @@ export function NurtureCenterView({
 
   return (
     <div className="space-y-6">
-      {/* Pure White Header Banner with Rose Accent */}
-      <section className="bg-white border border-slate-200 border-l-4 border-l-rose-600 rounded-xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Pure White Header Banner with Red Accent */}
+      <section className="bg-white border border-neutral-300 border-t-2 border-t-red-600 rounded-xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-start gap-4">
-          <div className="h-11 w-11 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
             <Flame className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="font-display text-lg font-semibold text-slate-900">
+            <h2 className="font-display text-lg font-bold text-black">
               Tạo &amp; Nuôi Nick FB, Fanpage (Chuẩn bị Chiến dịch Quảng cáo)
             </h2>
-            <p className="text-sm text-slate-700 mt-0.5">
+            <p className="text-sm text-neutral-800 mt-0.5">
               Khởi tạo hồ sơ Nick FB kèm 2FA/Proxy, tạo Fanpage vệ tinh và chạy kịch bản nuôi Trust tự nhiên để sẵn sàng lên Camp Ads bền vững.
             </p>
           </div>
@@ -307,15 +307,15 @@ export function NurtureCenterView({
 
         <div className="flex items-center gap-5 shrink-0 font-mono tabular-nums text-xs">
           <div>
-            <div className="text-slate-600">Nick FB đạt chuẩn Ads</div>
-            <div className="text-lg font-semibold text-rose-700">
+            <div className="text-neutral-800 font-semibold">Nick FB đạt chuẩn Ads</div>
+            <div className="text-lg font-bold text-red-700">
               {readyProfilesCount} / {accounts.length}
             </div>
           </div>
-          <div className="h-8 w-px bg-slate-200" aria-hidden="true" />
+          <div className="h-8 w-px bg-neutral-300" aria-hidden="true" />
           <div>
-            <div className="text-slate-600">Fanpage đạt chuẩn Ads</div>
-            <div className="text-lg font-semibold text-emerald-700">
+            <div className="text-neutral-800 font-semibold">Fanpage đạt chuẩn Ads</div>
+            <div className="text-lg font-bold text-blue-700">
               {readyPagesCount} / {fanpages.length}
             </div>
           </div>
@@ -323,29 +323,29 @@ export function NurtureCenterView({
       </section>
 
       {/* Warmup Action Control Strip */}
-      <section className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <section className="bg-white border border-neutral-300 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <div className="flex items-center gap-2 text-sm font-bold text-black">
             <span>Trình chạy Nuôi Tương tác Tự động (Warm-up Worker)</span>
             {isRunning && (
-              <span className="text-xs font-medium text-emerald-700">· Đang chạy realtime</span>
+              <span className="text-xs font-bold text-blue-700">· Đang chạy realtime</span>
             )}
           </div>
-          <p className="text-xs text-slate-600 truncate">
+          <p className="text-xs text-neutral-800 truncate">
             {warmupStream?.currentAction ||
               'Tick chọn các Nick FB hoặc Fanpage bên dưới rồi nhấn Chạy phiên nuôi để tăng Trust Score & Follower tự nhiên.'}
           </p>
           {warmupStream && warmupStream.total > 0 && isRunning && (
             <div className="pt-1 flex items-center gap-3 max-w-md">
-              <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-rose-600 transition-all duration-300"
+                  className="h-full bg-red-600 transition-all duration-300"
                   style={{
                     width: `${Math.round((warmupStream.progress / warmupStream.total) * 100)}%`,
                   }}
                 />
               </div>
-              <span className="font-mono tabular-nums text-xs text-slate-500">
+              <span className="font-mono tabular-nums text-xs font-semibold text-black">
                 {warmupStream.progress}/{warmupStream.total}
               </span>
             </div>
@@ -356,7 +356,7 @@ export function NurtureCenterView({
           <button
             type="button"
             onClick={handleSelectAllTargets}
-            className="h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 whitespace-nowrap"
+            className="h-9 px-3 rounded-lg border border-neutral-300 bg-white hover:border-blue-600 text-xs font-semibold text-black whitespace-nowrap"
           >
             Chọn tất cả ({accounts.filter((a) => a.enabled).length} Nick +{' '}
             {fanpages.filter((p) => p.enabled).length} Page)
@@ -366,16 +366,16 @@ export function NurtureCenterView({
             <button
               type="button"
               onClick={onStopWarmup}
-              className="h-9 px-4 inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold whitespace-nowrap"
+              className="h-9 px-4 inline-flex items-center gap-2 rounded-lg bg-black hover:bg-neutral-800 text-white text-xs font-bold whitespace-nowrap"
             >
-              <Square className="h-3.5 w-3.5" />
+              <Square className="h-3.5 w-3.5 text-red-500" />
               <span>Dừng phiên nuôi</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={handleRunWarmup}
-              className="h-9 px-4 inline-flex items-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold whitespace-nowrap"
+              className="h-9 px-4 inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold whitespace-nowrap"
             >
               <Play className="h-3.5 w-3.5" />
               <span>
@@ -389,10 +389,10 @@ export function NurtureCenterView({
       {feedback && (
         <div
           role={feedback.type === 'err' ? 'alert' : 'status'}
-          className={`px-4 py-3 rounded-xl border text-xs font-medium ${
+          className={`px-4 py-3 rounded-xl border-2 bg-white text-xs font-semibold ${
             feedback.type === 'err'
-              ? 'bg-red-50 border-red-200 text-red-700'
-              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              ? 'border-red-600 text-red-700'
+              : 'border-blue-600 text-blue-700'
           }`}
         >
           {feedback.text}
@@ -401,15 +401,15 @@ export function NurtureCenterView({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Creation Forms (Nick FB & Fanpage) */}
-        <section className="lg:col-span-5 bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-2 border-b border-slate-200 bg-white">
+        <section className="lg:col-span-5 bg-white border border-neutral-300 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-2 border-b border-neutral-300 bg-white">
             <button
               type="button"
               onClick={() => setCreateMode('page')}
-              className={`py-3 px-4 text-xs font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${
+              className={`py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${
                 createMode === 'page'
-                  ? 'border-rose-600 text-rose-700 bg-white'
-                  : 'border-transparent text-slate-700 hover:text-slate-900'
+                  ? 'border-red-600 text-red-700 bg-white'
+                  : 'border-transparent text-black hover:text-red-700'
               }`}
             >
               <Flag className="h-3.5 w-3.5" />
@@ -418,10 +418,10 @@ export function NurtureCenterView({
             <button
               type="button"
               onClick={() => setCreateMode('profile')}
-              className={`py-3 px-4 text-xs font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${
+              className={`py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 border-b-2 transition-colors ${
                 createMode === 'profile'
-                  ? 'border-rose-600 text-rose-700 bg-white'
-                  : 'border-transparent text-slate-700 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-700 bg-white'
+                  : 'border-transparent text-black hover:text-blue-700'
               }`}
             >
               <UserPlus className="h-3.5 w-3.5" />
@@ -433,14 +433,14 @@ export function NurtureCenterView({
             {createMode === 'profile' ? (
               <form onSubmit={handleSubmitProfile} className="space-y-4">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-display text-sm font-semibold text-slate-900">
+                  <h3 className="font-display text-sm font-bold text-black">
                     Khởi tạo Hồ sơ Nick FB (Nuôi Ads)
                   </h3>
                   <button
                     type="button"
                     onClick={handleGenerateSamplePersona}
                     disabled={generatingPersona}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-semibold whitespace-nowrap"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-red-600 text-red-700 hover:bg-red-600 hover:text-white transition-colors text-xs font-bold whitespace-nowrap"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     <span>{generatingPersona ? 'Đang tạo...' : 'Tạo nhanh Profile mẫu'}</span>
@@ -450,7 +450,7 @@ export function NurtureCenterView({
                 <div>
                   <label
                     htmlFor="nurture-acc-name"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-bold text-black mb-1"
                   >
                     Tên hiển thị Nick Facebook
                   </label>
@@ -460,7 +460,7 @@ export function NurtureCenterView({
                     value={accName}
                     onChange={(e) => setAccName(e.target.value)}
                     placeholder="VD: Hoàng Bảo Vy (Ads Warmup #04)"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:border-rose-600 focus:outline-none"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-sm text-black placeholder:text-neutral-500 focus:border-blue-600 focus:outline-none"
                   />
                 </div>
 
@@ -468,7 +468,7 @@ export function NurtureCenterView({
                   <div>
                     <label
                       htmlFor="nurture-acc-uid"
-                      className="block text-xs font-medium text-slate-700 mb-1"
+                      className="block text-xs font-bold text-black mb-1"
                     >
                       Facebook UID
                     </label>
@@ -478,13 +478,13 @@ export function NurtureCenterView({
                       value={fbUid}
                       onChange={(e) => setFbUid(e.target.value)}
                       placeholder="100089..."
-                      className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs font-mono text-slate-900 focus:border-rose-600 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs font-mono text-black placeholder:text-neutral-500 focus:border-blue-600 focus:outline-none"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="nurture-acc-stage"
-                      className="block text-xs font-medium text-slate-700 mb-1"
+                      className="block text-xs font-bold text-black mb-1"
                     >
                       Giai đoạn khởi điểm
                     </label>
@@ -494,7 +494,7 @@ export function NurtureCenterView({
                       onChange={(e) =>
                         setWarmupStage(e.target.value as FacebookAccount['warmupStage'])
                       }
-                      className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:border-rose-600 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs text-black focus:border-blue-600 focus:outline-none"
                     >
                       <option value="Mới (1-7 ngày)">Mới (1-7 ngày)</option>
                       <option value="Đang nuôi (8-21 ngày)">Đang nuôi (8-21 ngày)</option>
@@ -507,7 +507,7 @@ export function NurtureCenterView({
                   <div>
                     <label
                       htmlFor="nurture-acc-email"
-                      className="block text-xs font-medium text-slate-700 mb-1"
+                      className="block text-xs font-bold text-black mb-1"
                     >
                       Email khôi phục (Via/Clone)
                     </label>
@@ -517,13 +517,13 @@ export function NurtureCenterView({
                       value={recoveryEmail}
                       onChange={(e) => setRecoveryEmail(e.target.value)}
                       placeholder="name@mailcare.vn"
-                      className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs font-mono text-slate-900 focus:border-rose-600 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs font-mono text-black placeholder:text-neutral-500 focus:border-blue-600 focus:outline-none"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="nurture-acc-2fa"
-                      className="block text-xs font-medium text-slate-700 mb-1"
+                      className="block text-xs font-bold text-black mb-1"
                     >
                       Mã bảo mật 2FA Secret
                     </label>
@@ -533,7 +533,7 @@ export function NurtureCenterView({
                       value={twoFactorSecret}
                       onChange={(e) => setTwoFactorSecret(e.target.value)}
                       placeholder="ABCD EFGH IJKL MNOP"
-                      className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs font-mono text-slate-900 focus:border-rose-600 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs font-mono text-black placeholder:text-neutral-500 focus:border-blue-600 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -541,7 +541,7 @@ export function NurtureCenterView({
                 <div>
                   <label
                     htmlFor="nurture-acc-proxy"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-bold text-black mb-1"
                   >
                     Proxy dân cư riêng
                   </label>
@@ -550,14 +550,14 @@ export function NurtureCenterView({
                     type="text"
                     value={proxyEndpoint}
                     onChange={(e) => setProxyEndpoint(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs font-mono text-slate-900 focus:border-rose-600 focus:outline-none"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs font-mono text-black focus:border-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="nurture-acc-cookie"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-bold text-black mb-1"
                   >
                     Chuỗi Cookie phiên đăng nhập
                   </label>
@@ -567,14 +567,14 @@ export function NurtureCenterView({
                     value={cookieData}
                     onChange={(e) => setCookieData(e.target.value)}
                     placeholder="c_user=...; xs=...; datr=...;"
-                    className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs font-mono text-slate-900 focus:border-rose-600 focus:outline-none"
+                    className="w-full p-2.5 rounded-lg border border-neutral-400 bg-white text-xs font-mono text-black placeholder:text-neutral-500 focus:border-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium"
+                  className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-bold"
                 >
                   <Plus className="h-4 w-4" />
                   <span>{submitting ? 'Đang tạo...' : 'Lưu Nick FB & Đưa vào Nuôi'}</span>
@@ -582,14 +582,14 @@ export function NurtureCenterView({
               </form>
             ) : (
               <form onSubmit={handleSubmitFanpage} className="space-y-4">
-                <h3 className="font-display text-sm font-semibold text-slate-900">
+                <h3 className="font-display text-sm font-bold text-black">
                   Tạo Fanpage mới phục vụ Quảng cáo
                 </h3>
 
                 <div>
                   <label
                     htmlFor="page-owner-select"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-bold text-black mb-1"
                   >
                     Tài khoản FB chủ sở hữu (Admin Fanpage)
                   </label>
@@ -597,7 +597,7 @@ export function NurtureCenterView({
                     id="page-owner-select"
                     value={ownerAccountId}
                     onChange={(e) => setOwnerAccountId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:border-rose-600 focus:outline-none"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-sm text-black focus:border-red-600 focus:outline-none"
                   >
                     {accounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>
@@ -610,7 +610,7 @@ export function NurtureCenterView({
                 <div>
                   <label
                     htmlFor="page-name-input"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-bold text-black mb-1"
                   >
                     Tên Fanpage
                   </label>
@@ -620,7 +620,7 @@ export function NurtureCenterView({
                     value={pageName}
                     onChange={(e) => setPageName(e.target.value)}
                     placeholder="VD: Gia Dụng Tiện Ích Sài Gòn"
-                    className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:border-rose-600 focus:outline-none"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-sm text-black placeholder:text-neutral-500 focus:border-red-600 focus:outline-none"
                   />
                 </div>
 
@@ -628,7 +628,7 @@ export function NurtureCenterView({
                   <div>
                     <label
                       htmlFor="page-category-input"
-                      className="block text-xs font-medium text-slate-700 mb-1"
+                      className="block text-xs font-bold text-black mb-1"
                     >
                       Ngành hàng / Danh mục
                     </label>
@@ -637,13 +637,13 @@ export function NurtureCenterView({
                       type="text"
                       value={pageCategory}
                       onChange={(e) => setPageCategory(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:border-rose-600 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs text-black focus:border-red-600 focus:outline-none"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="page-slug-input"
-                      className="block text-xs font-medium text-slate-700 mb-1"
+                      className="block text-xs font-bold text-black mb-1"
                     >
                       Username / Link rút gọn
                     </label>
@@ -653,7 +653,7 @@ export function NurtureCenterView({
                       value={pageSlug}
                       onChange={(e) => setPageSlug(e.target.value)}
                       placeholder="giadungtienichsg"
-                      className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs font-mono text-slate-900 focus:border-rose-600 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-lg border border-neutral-400 bg-white text-xs font-mono text-black placeholder:text-neutral-500 focus:border-red-600 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -661,7 +661,7 @@ export function NurtureCenterView({
                 <div>
                   <label
                     htmlFor="page-desc-input"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-bold text-black mb-1"
                   >
                     Mô tả Fanpage chuẩn SEO (hiển thị cho khách &amp; thuật toán Ads)
                   </label>
@@ -671,14 +671,14 @@ export function NurtureCenterView({
                     value={pageDescription}
                     onChange={(e) => setPageDescription(e.target.value)}
                     placeholder="Chuyên cung cấp sản phẩm chính hãng, giao nhanh 2h, bảo hành 24 tháng..."
-                    className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:border-rose-600 focus:outline-none"
+                    className="w-full p-2.5 rounded-lg border border-neutral-400 bg-white text-xs text-black placeholder:text-neutral-500 focus:border-red-600 focus:outline-none"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium"
+                  className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-bold"
                 >
                   <Plus className="h-4 w-4" />
                   <span>{submitting ? 'Đang khởi tạo...' : 'Khởi tạo Fanpage & Nuôi Ads'}</span>
@@ -691,19 +691,19 @@ export function NurtureCenterView({
         {/* Right: Managed Assets List (Fanpages + FB Profiles) */}
         <div className="lg:col-span-7 space-y-6">
           {/* Owned Fanpages */}
-          <section className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 bg-white border-b border-slate-200 border-l-4 border-l-rose-600 flex items-center justify-between gap-4">
+          <section className="bg-white border border-neutral-300 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 bg-white border-b border-neutral-300 flex items-center justify-between gap-4">
               <div>
-                <h3 className="font-display text-base font-semibold text-slate-900">
+                <h3 className="font-display text-base font-bold text-black">
                   Danh sách Fanpage sở hữu ({fanpages.length})
                 </h3>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-neutral-800 mt-0.5">
                   Theo dõi Trust Score, Follower tự nhiên &amp; mức độ sẵn sàng chạy Ads / BM
                 </p>
               </div>
             </div>
 
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-neutral-200">
               {fanpages.map((page) => {
                 const checked = selectedPageIds.includes(page.id);
                 const isReady = page.adReadiness === 'Sẵn sàng chạy Ads';
@@ -718,32 +718,32 @@ export function NurtureCenterView({
                           checked={checked}
                           onChange={() => toggleSelectPage(page.id)}
                           aria-label={`Chọn Fanpage ${page.name} để nuôi`}
-                          className="mt-1 h-4 w-4 accent-rose-600 rounded"
+                          className="mt-1 h-4 w-4 accent-red-600 rounded"
                         />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-display text-sm font-semibold text-slate-900">
+                            <span className="font-display text-sm font-bold text-black">
                               {page.name}
                             </span>
                             <span
-                              className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${
+                              className={`px-2 py-0.5 rounded-md border text-[11px] font-bold bg-white ${
                                 isReady
-                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                  ? 'border-blue-600 text-blue-700'
                                   : page.adReadiness === 'Đang nuôi Ads'
-                                    ? 'bg-amber-50 border-amber-200 text-amber-700'
-                                    : 'bg-slate-100 border-slate-200 text-slate-600'
+                                    ? 'border-red-600 text-red-700'
+                                    : 'border-neutral-400 text-black'
                               }`}
                             >
                               {page.adReadiness}
                             </span>
                             {page.workerStatus === 'running' && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700">
                                 <RefreshCw className="h-3 w-3 animate-spin" />
                                 <span>Đang nuôi...</span>
                               </span>
                             )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-800 mt-1">
                             <span>{page.category}</span>
                             <span aria-hidden="true">·</span>
                             <span>Chủ quản: {page.ownerAccountName}</span>
@@ -752,7 +752,7 @@ export function NurtureCenterView({
                               href={page.pageUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-blue-600 hover:underline font-mono"
+                              className="inline-flex items-center gap-1 text-blue-700 hover:underline font-mono font-semibold"
                             >
                               <span>ID {page.pageId.slice(-6)}</span>
                               <ExternalLink className="h-3 w-3" />
@@ -765,10 +765,10 @@ export function NurtureCenterView({
                         <button
                           type="button"
                           onClick={() => onToggleFanpage(page.id)}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium ${
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-bold bg-white ${
                             page.enabled
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                              : 'border-slate-200 bg-slate-50 text-slate-500'
+                              ? 'border-blue-600 text-blue-700'
+                              : 'border-neutral-300 text-black'
                           }`}
                         >
                           {page.enabled ? 'Đang nuôi' : 'Tạm ngưng'}
@@ -777,43 +777,43 @@ export function NurtureCenterView({
                           type="button"
                           onClick={() => onDeleteFanpage(page.id)}
                           aria-label={`Xóa Fanpage ${page.name}`}
-                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          className="p-1.5 rounded-lg border border-neutral-300 bg-white text-black hover:text-red-600 hover:border-red-600"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-white border border-slate-200 rounded-lg p-3 font-mono tabular-nums">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-white border border-neutral-300 rounded-lg p-3 font-mono tabular-nums">
                       <div>
-                        <div className="text-slate-600 font-sans">Tuổi nuôi</div>
-                        <div className="font-semibold text-slate-900 mt-0.5">
+                        <div className="text-neutral-700 font-sans">Tuổi nuôi</div>
+                        <div className="font-bold text-black mt-0.5">
                           Ngày {page.warmupDays}
                         </div>
                       </div>
                       <div>
-                        <div className="text-slate-500 font-sans">Follower</div>
-                        <div className="font-semibold text-slate-900 mt-0.5">
+                        <div className="text-neutral-700 font-sans">Follower</div>
+                        <div className="font-bold text-black mt-0.5">
                           {formatNumberVi(page.followersCount)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-slate-500 font-sans">Bài đã đăng</div>
-                        <div className="font-semibold text-slate-900 mt-0.5">
+                        <div className="text-neutral-700 font-sans">Bài đã đăng</div>
+                        <div className="font-bold text-black mt-0.5">
                           {page.postsPublishedCount} bài
                         </div>
                       </div>
                       <div>
-                        <div className="text-slate-500 font-sans flex items-center justify-between">
+                        <div className="text-neutral-700 font-sans flex items-center justify-between">
                           <span>Trust Page</span>
-                          <span className="font-mono font-semibold text-rose-700">
+                          <span className="font-mono font-bold text-red-700">
                             {page.trustScore}%
                           </span>
                         </div>
-                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1.5">
+                        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mt-1.5">
                           <div
                             className={`h-full rounded-full ${
-                              page.trustScore >= 82 ? 'bg-emerald-600' : 'bg-rose-600'
+                              page.trustScore >= 82 ? 'bg-blue-600' : 'bg-red-600'
                             }`}
                             style={{ width: `${page.trustScore}%` }}
                           />
@@ -821,11 +821,11 @@ export function NurtureCenterView({
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-4 gap-y-1">
-                      <span className="font-semibold text-slate-700">Kịch bản hôm nay:</span>
+                    <div className="text-xs text-neutral-900 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="font-bold text-black">Kịch bản hôm nay:</span>
                       {checklist.map((step) => (
                         <span key={step} className="inline-flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3 text-rose-500 shrink-0" />
+                          <CheckCircle2 className="h-3 w-3 text-red-600 shrink-0" />
                           <span>{step}</span>
                         </span>
                       ))}
@@ -837,19 +837,19 @@ export function NurtureCenterView({
           </section>
 
           {/* Owned Personal FB Profiles (Ads Warm-up Status) */}
-          <section className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 bg-white border-b border-slate-200 border-l-4 border-l-indigo-600 flex items-center justify-between gap-4">
+          <section className="bg-white border border-neutral-300 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 bg-white border-b border-neutral-300 flex items-center justify-between gap-4">
               <div>
-                <h3 className="font-display text-base font-semibold text-slate-900">
+                <h3 className="font-display text-base font-bold text-black">
                   Nick FB Cá nhân đang nuôi ({accounts.length})
                 </h3>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-neutral-800 mt-0.5">
                   Dùng chung cụm tài khoản với Module Quét Group — quản lý Trust &amp; 2FA để lên TKQC
                 </p>
               </div>
             </div>
 
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-neutral-200">
               {accounts.map((acc) => {
                 const checked = selectedAccIds.includes(acc.id);
                 const isReady = acc.adAccountStatus === 'Sẵn sàng chạy Ads';
@@ -864,33 +864,33 @@ export function NurtureCenterView({
                           checked={checked}
                           onChange={() => toggleSelectAccount(acc.id)}
                           aria-label={`Chọn Nick FB ${acc.name} để nuôi`}
-                          className="mt-1 h-4 w-4 accent-rose-600 rounded"
+                          className="mt-1 h-4 w-4 accent-blue-600 rounded"
                         />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-display text-sm font-semibold text-slate-900">
+                            <span className="font-display text-sm font-bold text-black">
                               {acc.name}
                             </span>
                             <span
-                              className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${
+                              className={`px-2 py-0.5 rounded-md border text-[11px] font-bold bg-white ${
                                 isReady
-                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                  : 'bg-amber-50 border-amber-200 text-amber-700'
+                                  ? 'border-blue-600 text-blue-700'
+                                  : 'border-red-600 text-red-700'
                               }`}
                             >
                               {acc.adAccountStatus}
                             </span>
                           </div>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
-                            <span className="font-mono">UID: {acc.fbUid}</span>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-800 mt-1">
+                            <span className="font-mono font-semibold text-black">UID: {acc.fbUid}</span>
                             {acc.recoveryEmail && (
                               <span className="inline-flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
+                                <Mail className="h-3 w-3 text-blue-600" />
                                 <span>{acc.recoveryEmail}</span>
                               </span>
                             )}
                             {acc.twoFactorSecret && (
-                              <span className="inline-flex items-center gap-1 font-mono text-emerald-700">
+                              <span className="inline-flex items-center gap-1 font-mono font-bold text-blue-700">
                                 <KeyRound className="h-3 w-3" />
                                 <span>2FA OK</span>
                               </span>
@@ -901,18 +901,18 @@ export function NurtureCenterView({
 
                       <div className="flex items-center gap-4 shrink-0 font-mono tabular-nums text-xs">
                         <div className="text-right">
-                          <div className="text-slate-500 font-sans">Ngày nuôi</div>
-                          <div className="font-semibold text-slate-900">#{acc.warmupDays}</div>
+                          <div className="text-neutral-700 font-sans">Ngày nuôi</div>
+                          <div className="font-bold text-black">#{acc.warmupDays}</div>
                         </div>
                         <div className="w-24">
-                          <div className="flex justify-between text-slate-600 mb-1">
+                          <div className="flex justify-between text-black mb-1">
                             <span>Trust</span>
-                            <span className="font-semibold text-slate-900">{acc.trustScore}%</span>
+                            <span className="font-bold text-black">{acc.trustScore}%</span>
                           </div>
-                          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${
-                                acc.trustScore >= 82 ? 'bg-emerald-600' : 'bg-indigo-600'
+                                acc.trustScore >= 82 ? 'bg-blue-600' : 'bg-red-600'
                               }`}
                               style={{ width: `${acc.trustScore}%` }}
                             />
@@ -921,10 +921,10 @@ export function NurtureCenterView({
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1 pl-7">
+                    <div className="text-xs text-neutral-800 flex flex-wrap items-center gap-x-4 gap-y-1 pl-7">
                       {checklist.slice(0, 2).map((step) => (
                         <span key={step} className="inline-flex items-center gap-1">
-                          <ShieldAlert className="h-3 w-3 text-indigo-500 shrink-0" />
+                          <ShieldAlert className="h-3 w-3 text-blue-600 shrink-0" />
                           <span>{step}</span>
                         </span>
                       ))}

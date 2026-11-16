@@ -3,7 +3,6 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type {
   ActivityLog,
-  AdminUser,
   AdReadinessStatus,
   AutomationStream,
   CommentApprovalPolicy,
@@ -19,7 +18,6 @@ import type {
   KeywordChartPoint,
   KnowledgeDoc,
   KnowledgeSourceType,
-  PermissionKey,
   PostApprovalPolicy,
   PostGoal,
   PostRecurrence,
@@ -31,9 +29,8 @@ import type {
   ScheduledPost,
   ScheduledPostStatus,
   SystemSettings,
-  UserRole,
 } from '../shared/types.ts';
-import { DEFAULT_ROLE_PERMISSIONS, hashPassword } from './lib/auth.ts';
+import { DEFAULT_APP_PASSCODE, hashPassword, verifyPassword } from './lib/auth.ts';
 import { chunkDocument } from './lib/rag.ts';
 
 const DATA_DIR = process.env.DATA_DIR
@@ -241,24 +238,16 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS admin_users (
-    id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    full_name TEXT NOT NULL,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL,
-    permissions TEXT NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1,
-    last_login_at TEXT,
-    created_at TEXT NOT NULL
+  CREATE TABLE IF NOT EXISTS app_passcode (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    passcode_hash TEXT NOT NULL,
+    updated_at TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS user_sessions (
+  CREATE TABLE IF NOT EXISTS app_sessions (
     token TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
     expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
+    created_at TEXT NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS system_settings (
@@ -315,41 +304,12 @@ function daysAgoIso(daysAgo: number, hour = 10): string {
 }
 
 export function seedDatabaseIfEmpty(): void {
-  const usersCount = db.prepare('SELECT COUNT(*) as c FROM admin_users').get() as { c: number };
-  if (usersCount.c === 0) {
-    const insertUser = db.prepare(`
-      INSERT INTO admin_users (
-        id, username, full_name, password_hash, role, permissions, active, last_login_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?)
-    `);
-    const now = new Date().toISOString();
-    insertUser.run(
-      'usr_admin_01',
-      'admin@socialpulse.vn',
-      'Quản trị viên Hệ thống',
-      hashPassword('Admin@123456'),
-      'admin',
-      JSON.stringify(DEFAULT_ROLE_PERMISSIONS.admin),
-      now
-    );
-    insertUser.run(
-      'usr_manager_02',
-      'manager@socialpulse.vn',
-      'Trưởng nhóm Marketing',
-      hashPassword('Manager@123'),
-      'manager',
-      JSON.stringify(DEFAULT_ROLE_PERMISSIONS.manager),
-      now
-    );
-    insertUser.run(
-      'usr_operator_03',
-      'operator@socialpulse.vn',
-      'Chuyên viên Vận hành',
-      hashPassword('Operator@123'),
-      'operator',
-      JSON.stringify(DEFAULT_ROLE_PERMISSIONS.operator),
-      now
-    );
+  const passcodeCount = db.prepare('SELECT COUNT(*) as c FROM app_passcode').get() as { c: number };
+  if (passcodeCount.c === 0) {
+    db.prepare(`
+      INSERT INTO app_passcode (id, passcode_hash, updated_at)
+      VALUES (1, ?, ?)
+    `).run(hashPassword(DEFAULT_APP_PASSCODE), new Date().toISOString());
   }
 
   const sysSettingsCount = db.prepare('SELECT COUNT(*) as c FROM system_settings').get() as { c: number };
@@ -1223,186 +1183,51 @@ export function getDashboardSnapshot(): DashboardSnapshot {
   };
 }
 
-function mapAdminUserRow(r: Record<string, unknown>): AdminUser {
-  return {
-    id: String(r.id),
-    username: String(r.username),
-    fullName: String(r.full_name),
-    role: r.role as UserRole,
-    permissions: JSON.parse(String(r.permissions || '[]')) as PermissionKey[],
-    active: Boolean(r.active),
-    lastLoginAt: r.last_login_at ? String(r.last_login_at) : null,
-    createdAt: String(r.created_at),
-  };
-}
-
-export function getUserByUsernameWithHash(
-  username: string
-): (AdminUser & { passwordHash: string }) | null {
-  const row = db
-    .prepare('SELECT * FROM admin_users WHERE lower(username) = lower(?)')
-    .get(username.trim()) as Record<string, unknown> | undefined;
-  if (!row) return null;
-  return {
-    ...mapAdminUserRow(row),
-    passwordHash: String(row.password_hash),
-  };
-}
-
-export function getUserById(id: string): AdminUser | null {
-  const row = db.prepare('SELECT * FROM admin_users WHERE id = ?').get(id) as
-    | Record<string, unknown>
+export function verifyAppPasscode(passcode: string): boolean {
+  const row = db.prepare('SELECT passcode_hash FROM app_passcode WHERE id = 1').get() as
+    | { passcode_hash: string }
     | undefined;
-  return row ? mapAdminUserRow(row) : null;
-}
-
-export function getUserByIdWithHash(id: string): (AdminUser & { passwordHash: string }) | null {
-  const row = db.prepare('SELECT * FROM admin_users WHERE id = ?').get(id) as
-    | Record<string, unknown>
-    | undefined;
-  if (!row) return null;
-  return {
-    ...mapAdminUserRow(row),
-    passwordHash: String(row.password_hash),
-  };
-}
-
-export function listAdminUsers(): AdminUser[] {
-  const rows = db
-    .prepare('SELECT * FROM admin_users ORDER BY created_at ASC')
-    .all() as Array<Record<string, unknown>>;
-  return rows.map(mapAdminUserRow);
-}
-
-export function createAdminUser(input: {
-  username: string;
-  fullName: string;
-  password: string;
-  role: UserRole;
-  permissions?: PermissionKey[];
-  active?: boolean;
-}): AdminUser {
-  const username = input.username.trim().toLowerCase();
-  const fullName = input.fullName.trim();
-  const existing = getUserByUsernameWithHash(username);
-  if (existing) {
-    throw new Error(`Tài khoản "${username}" đã tồn tại trong hệ thống.`);
-  }
-
-  const id = `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`;
-  const permissions =
-    input.permissions && input.permissions.length > 0
-      ? input.permissions
-      : DEFAULT_ROLE_PERMISSIONS[input.role];
-  const now = new Date().toISOString();
-
-  db.prepare(`
-    INSERT INTO admin_users (
-      id, username, full_name, password_hash, role, permissions, active, last_login_at, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
-  `).run(
-    id,
-    username,
-    fullName,
-    hashPassword(input.password),
-    input.role,
-    JSON.stringify(permissions),
-    input.active === false ? 0 : 1,
-    now
-  );
-
-  return getUserById(id)!;
-}
-
-export function updateAdminUser(
-  id: string,
-  patch: {
-    fullName?: string;
-    role?: UserRole;
-    permissions?: PermissionKey[];
-    active?: boolean;
-    password?: string;
-  }
-): AdminUser {
-  const existing = getUserById(id);
-  if (!existing) {
-    throw new Error('Không tìm thấy tài khoản quản trị.');
-  }
-
-  const nextFullName = patch.fullName !== undefined ? patch.fullName.trim() : existing.fullName;
-  const nextRole = patch.role ?? existing.role;
-  const nextPermissions =
-    patch.permissions !== undefined
-      ? patch.permissions
-      : patch.role && patch.role !== existing.role
-        ? DEFAULT_ROLE_PERMISSIONS[patch.role]
-        : existing.permissions;
-  const nextActive = patch.active !== undefined ? patch.active : existing.active;
-
-  db.prepare(`
-    UPDATE admin_users
-    SET full_name = ?, role = ?, permissions = ?, active = ?
-    WHERE id = ?
-  `).run(nextFullName, nextRole, JSON.stringify(nextPermissions), nextActive ? 1 : 0, id);
-
-  if (patch.password && patch.password.trim().length >= 6) {
-    db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(
-      hashPassword(patch.password.trim()),
-      id
+  if (!row) {
+    // Auto-seed default passcode 8889 if missing
+    db.prepare('INSERT OR REPLACE INTO app_passcode (id, passcode_hash, updated_at) VALUES (1, ?, ?)').run(
+      hashPassword(DEFAULT_APP_PASSCODE),
+      new Date().toISOString()
     );
+    return passcode === DEFAULT_APP_PASSCODE;
   }
-
-  if (!nextActive) {
-    db.prepare('DELETE FROM user_sessions WHERE user_id = ?').run(id);
-  }
-
-  return getUserById(id)!;
+  return verifyPassword(passcode, String(row.passcode_hash));
 }
 
-export function updateUserPassword(id: string, newPassword: string): void {
-  db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(
-    hashPassword(newPassword),
-    id
+export function updateAppPasscode(newPasscode: string): void {
+  db.prepare('INSERT OR REPLACE INTO app_passcode (id, passcode_hash, updated_at) VALUES (1, ?, ?)').run(
+    hashPassword(newPasscode),
+    new Date().toISOString()
   );
 }
 
-export function deleteAdminUser(id: string): void {
-  db.prepare('DELETE FROM user_sessions WHERE user_id = ?').run(id);
-  db.prepare('DELETE FROM admin_users WHERE id = ?').run(id);
-}
-
-export function createSession(userId: string, token: string, expiresAt: string): void {
+export function createAppSession(token: string, expiresAt: string): void {
   db.prepare(`
-    INSERT INTO user_sessions (token, user_id, expires_at, created_at)
-    VALUES (?, ?, ?, ?)
-  `).run(token, userId, expiresAt, new Date().toISOString());
+    INSERT INTO app_sessions (token, expires_at, created_at)
+    VALUES (?, ?, ?)
+  `).run(token, expiresAt, new Date().toISOString());
 }
 
-export function touchUserLogin(userId: string): void {
-  db.prepare('UPDATE admin_users SET last_login_at = ? WHERE id = ?').run(
-    new Date().toISOString(),
-    userId
-  );
-}
-
-export function getSessionUser(token: string): AdminUser | null {
+export function isAppSessionValid(token: string): boolean {
+  if (!token) return false;
   const row = db
-    .prepare('SELECT user_id, expires_at FROM user_sessions WHERE token = ?')
-    .get(token) as { user_id: string; expires_at: string } | undefined;
-  if (!row) return null;
+    .prepare('SELECT expires_at FROM app_sessions WHERE token = ?')
+    .get(token) as { expires_at: string } | undefined;
+  if (!row) return false;
 
   if (new Date(row.expires_at).getTime() <= Date.now()) {
-    db.prepare('DELETE FROM user_sessions WHERE token = ?').run(token);
-    return null;
+    db.prepare('DELETE FROM app_sessions WHERE token = ?').run(token);
+    return false;
   }
-
-  const user = getUserById(row.user_id);
-  if (!user || !user.active) return null;
-  return user;
+  return true;
 }
 
-export function deleteSession(token: string): void {
-  db.prepare('DELETE FROM user_sessions WHERE token = ?').run(token);
+export function deleteAppSession(token: string): void {
+  db.prepare('DELETE FROM app_sessions WHERE token = ?').run(token);
 }
 
 export function getSystemSettings(): SystemSettings {
@@ -1479,7 +1304,6 @@ export function getDatabaseStats(): DatabaseStats {
     knowledgeDocsCount: countOf('knowledge_docs'),
     scheduledPostsCount: countOf('scheduled_posts'),
     logsCount: countOf('activity_logs'),
-    usersCount: countOf('admin_users'),
   };
 }
 

@@ -1,58 +1,17 @@
-const TOKEN_STORAGE_KEY = 'spfb_session_token';
-
 let memoryToken: string | null = null;
 
 export function getAuthToken(): string | null {
-  if (memoryToken) return memoryToken;
-  try {
-    const ss = window.sessionStorage?.getItem(TOKEN_STORAGE_KEY);
-    if (ss) {
-      memoryToken = ss;
-      return ss;
-    }
-  } catch {
-    // ignore storage restriction inside strict iframes
-  }
-  try {
-    const ls = window.localStorage?.getItem(TOKEN_STORAGE_KEY);
-    if (ls) {
-      memoryToken = ls;
-      return ls;
-    }
-  } catch {
-    // ignore storage restriction inside strict iframes
-  }
-  return null;
+  return memoryToken;
 }
 
 export function saveAuthToken(token: string): void {
   const clean = token.trim();
   if (!clean) return;
   memoryToken = clean;
-  try {
-    window.sessionStorage?.setItem(TOKEN_STORAGE_KEY, clean);
-  } catch {
-    // ignore
-  }
-  try {
-    window.localStorage?.setItem(TOKEN_STORAGE_KEY, clean);
-  } catch {
-    // ignore
-  }
 }
 
 export function clearAuthToken(): void {
   memoryToken = null;
-  try {
-    window.sessionStorage?.removeItem(TOKEN_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
-  try {
-    window.localStorage?.removeItem(TOKEN_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
 }
 
 export function buildAuthUrl(url: string): string {
@@ -73,7 +32,6 @@ export function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
 
   return window.fetch(input, {
     ...init,
-    credentials: init?.credentials ?? 'include',
     headers,
   });
 }

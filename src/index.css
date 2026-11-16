@@ -9,7 +9,7 @@
 @layer base {
   html, body {
     background-color: #ffffff;
-    color: #0f172a;
+    color: #000000;
     font-family: var(--font-sans);
     scroll-behavior: smooth;
   }

@@ -5,22 +5,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   addActivityLog,
-  createAdminUser,
-  createSession,
+  createAppSession,
   db,
-  deleteAdminUser,
-  deleteSession,
+  deleteAppSession,
   getDashboardSnapshot,
   getDatabaseStats,
   getSafetyConfig,
-  getSessionUser,
   getSystemSettings,
   getTodayUsage,
-  getUserById,
-  getUserByIdWithHash,
-  getUserByUsernameWithHash,
   incrementTodayUsage,
-  listAdminUsers,
+  isAppSessionValid,
   listDatasets,
   listFacebookAccounts,
   listFanpages,
@@ -31,19 +25,12 @@ import {
   listScheduledPosts,
   listStreams,
   seedDatabaseIfEmpty,
-  touchUserLogin,
-  updateAdminUser,
+  updateAppPasscode,
   updateSafetyConfig,
   updateSystemSettings,
-  updateUserPassword,
+  verifyAppPasscode,
 } from './server/db.ts';
-import {
-  ALL_PERMISSIONS,
-  generateSessionToken,
-  parseCookieValue,
-  userHasPermission,
-  verifyPassword,
-} from './server/lib/auth.ts';
+import { generateSessionToken, validatePasscode } from './server/lib/auth.ts';
 import { generatePersonaDraft } from './server/lib/nurturing.ts';
 import { chunkDocument } from './server/lib/rag.ts';
 import { buildCsvDocument, isWithinActiveHours } from './server/lib/safety.ts';
@@ -63,21 +50,13 @@ import {
   generateContextualReply,
   generateScheduledSocialPost,
 } from './server/services/geminiService.ts';
-import type { AdminUser, PermissionKey, UserRole } from './shared/types.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SESSION_COOKIE_NAME = 'spfb_session';
-const VALID_ROLES: UserRole[] = ['admin', 'manager', 'operator', 'viewer'];
-const VALID_PERMISSION_SET = new Set<PermissionKey>(ALL_PERMISSIONS.map((p) => p.key));
 
 seedDatabaseIfEmpty();
 
-type AuthedRequest = express.Request & { authUser?: AdminUser };
-
 function extractSessionToken(req: express.Request): string {
-  const cookieToken = parseCookieValue(req.headers.cookie, SESSION_COOKIE_NAME);
-  if (cookieToken) return cookieToken;
   const authHeader = String(req.headers.authorization ?? '');
   if (authHeader.startsWith('Bearer ')) {
     return authHeader.slice(7).trim();
@@ -86,52 +65,14 @@ function extractSessionToken(req: express.Request): string {
   return queryToken;
 }
 
-function getRequestUser(req: express.Request): AdminUser | null {
-  const token = extractSessionToken(req);
-  if (!token) return null;
-  return getSessionUser(token);
-}
-
-function isHttpsRequest(req: express.Request): boolean {
-  const proto = String(req.headers['x-forwarded-proto'] ?? '').split(',')[0].trim();
-  return req.secure || proto === 'https';
-}
-
 const requireAuth: express.RequestHandler = (req, res, next) => {
-  const user = getRequestUser(req);
-  if (!user) {
-    res.status(401).json({ error: 'Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập.' });
+  const token = extractSessionToken(req);
+  if (!isAppSessionValid(token)) {
+    res.status(401).json({ error: 'Phiên truy cập đã khóa hoặc hết hạn. Vui lòng nhập mật mã.' });
     return;
   }
-  (req as AuthedRequest).authUser = user;
   next();
 };
-
-function requirePermission(...allowedPermissions: PermissionKey[]): express.RequestHandler {
-  return (req, res, next) => {
-    const user = getRequestUser(req);
-    if (!user) {
-      res.status(401).json({ error: 'Vui lòng đăng nhập để thực hiện thao tác này.' });
-      return;
-    }
-    const settings = getSystemSettings();
-    if (settings.maintenanceMode && user.role !== 'admin' && req.method !== 'GET') {
-      res.status(503).json({
-        error: 'Hệ thống đang ở chế độ bảo trì. Chỉ Quản trị viên (Admin) mới được phép thao tác.',
-      });
-      return;
-    }
-    const hasAccess = allowedPermissions.some((perm) => userHasPermission(user, perm));
-    if (!hasAccess) {
-      res.status(403).json({
-        error: 'Tài khoản của bạn không được phân quyền thực hiện chức năng này.',
-      });
-      return;
-    }
-    (req as AuthedRequest).authUser = user;
-    next();
-  };
-}
 
 async function createApp() {
   const app = express();
@@ -140,7 +81,7 @@ async function createApp() {
   // Multimodal file upload route (supports audio, video, image, PDF, Office, text up to 50MB)
   app.post(
     '/api/knowledge/upload',
-    requirePermission('manage_ai_rag'),
+    requireAuth,
     express.raw({ type: '*/*', limit: '50mb' }),
     async (req, res) => {
       try {
@@ -245,104 +186,69 @@ async function createApp() {
     });
   });
 
-  // Authentication & Session Routes
+  // Single-Owner Passcode Gate Routes
   app.get('/api/auth/me', (req, res) => {
-    const user = getRequestUser(req);
+    const token = extractSessionToken(req);
     const systemSettings = getSystemSettings();
     res.json({
-      authenticated: Boolean(user),
-      user: user ?? null,
+      authenticated: isAppSessionValid(token),
       systemSettings,
     });
   });
 
   app.post('/api/auth/login', (req, res) => {
-    const username = String(req.body?.username ?? '').trim();
-    const password = String(req.body?.password ?? '');
-    if (!username || !password) {
-      res.status(400).json({ error: 'Vui lòng nhập Email / Tên đăng nhập và Mật khẩu.' });
+    const passcode = String(req.body?.passcode ?? req.body?.password ?? '').trim();
+    if (!passcode) {
+      res.status(400).json({ error: 'Vui lòng nhập mật mã truy cập.' });
       return;
     }
 
-    const userRecord = getUserByUsernameWithHash(username);
-    if (!userRecord || !verifyPassword(password, userRecord.passwordHash)) {
-      res.status(401).json({ error: 'Email/Tên đăng nhập hoặc mật khẩu không chính xác.' });
-      return;
-    }
-
-    if (!userRecord.active) {
-      res.status(403).json({ error: 'Tài khoản này đã bị vô hiệu hóa bởi Quản trị viên.' });
+    if (!verifyAppPasscode(passcode)) {
+      res.status(401).json({ error: 'Mật mã truy cập không chính xác.' });
       return;
     }
 
     const settings = getSystemSettings();
-    if (settings.maintenanceMode && userRecord.role !== 'admin') {
-      res.status(503).json({
-        error: 'Hệ thống đang tạm bảo trì. Hiện tại chỉ tài khoản Admin mới có thể đăng nhập.',
-      });
-      return;
-    }
-
     const token = generateSessionToken();
     const ttlMs = Math.max(1, settings.sessionTimeoutHours) * 60 * 60 * 1000;
     const expiresAt = new Date(Date.now() + ttlMs).toISOString();
 
-    createSession(userRecord.id, token, expiresAt);
-    touchUserLogin(userRecord.id);
-    const safeUser = getUserById(userRecord.id)!;
+    createAppSession(token, expiresAt);
+    addActivityLog('Bảo mật', 'info', 'Đã mở khóa hệ thống bằng mật mã truy cập.');
 
-    addActivityLog(
-      'System Admin',
-      'info',
-      `Tài khoản "${safeUser.fullName}" (${safeUser.role.toUpperCase()}) đã đăng nhập hệ thống.`
-    );
-
-    const cookieFlags = isHttpsRequest(req)
-      ? 'Path=/; HttpOnly; SameSite=None; Secure; Partitioned'
-      : 'Path=/; HttpOnly; SameSite=Lax';
-
-    res.setHeader(
-      'Set-Cookie',
-      `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; ${cookieFlags}; Max-Age=${Math.floor(ttlMs / 1000)}`
-    );
-    res.json({ ok: true, token, user: safeUser, systemSettings: settings });
+    res.json({ ok: true, token, systemSettings: settings });
   });
 
   app.post('/api/auth/logout', (req, res) => {
     const token = extractSessionToken(req);
     if (token) {
-      deleteSession(token);
+      deleteAppSession(token);
     }
-    const cookieFlags = isHttpsRequest(req)
-      ? 'Path=/; HttpOnly; SameSite=None; Secure; Partitioned'
-      : 'Path=/; HttpOnly; SameSite=Lax';
-    res.setHeader(
-      'Set-Cookie',
-      `${SESSION_COOKIE_NAME}=; ${cookieFlags}; Max-Age=0`
-    );
     res.json({ ok: true });
   });
 
-  app.post('/api/auth/change-password', requireAuth, (req, res) => {
-    const authUser = (req as AuthedRequest).authUser!;
-    const currentPassword = String(req.body?.currentPassword ?? '');
-    const newPassword = String(req.body?.newPassword ?? '');
+  const handleChangePasscode: express.RequestHandler = (req, res) => {
+    const currentPasscode = String(req.body?.currentPasscode ?? req.body?.currentPassword ?? '').trim();
+    const rawNewPasscode = String(req.body?.newPasscode ?? req.body?.newPassword ?? '');
 
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: 'Mật khẩu mới phải có tối thiểu 6 ký tự.' });
+    if (!verifyAppPasscode(currentPasscode)) {
+      res.status(400).json({ error: 'Mật mã hiện tại không đúng.' });
       return;
     }
 
-    const fullRecord = getUserByIdWithHash(authUser.id);
-    if (!fullRecord || !verifyPassword(currentPassword, fullRecord.passwordHash)) {
-      res.status(400).json({ error: 'Mật khẩu hiện tại không đúng.' });
+    const check = validatePasscode(rawNewPasscode);
+    if (!check.ok) {
+      res.status(400).json({ error: check.error });
       return;
     }
 
-    updateUserPassword(authUser.id, newPassword);
-    addActivityLog('System Admin', 'success', `Người dùng "${authUser.username}" đã đổi mật khẩu.`);
+    updateAppPasscode(check.passcode);
+    addActivityLog('Bảo mật', 'success', 'Đã cập nhật mật mã truy cập hệ thống mới.');
     res.json({ ok: true });
-  });
+  };
+
+  app.post('/api/auth/change-passcode', requireAuth, handleChangePasscode);
+  app.post('/api/auth/change-password', requireAuth, handleChangePasscode);
 
   app.get('/api/events', requireAuth, (req, res) => {
     registerSseClient(res);
@@ -357,13 +263,13 @@ async function createApp() {
     res.json({ accounts: listFacebookAccounts() });
   });
 
-  app.post('/api/accounts/generate-persona', requirePermission('manage_fb_accounts', 'manage_nurture'), (_req, res) => {
+  app.post('/api/accounts/generate-persona', requireAuth, (_req, res) => {
     const existingCount = listFacebookAccounts().length;
     const seed = existingCount * 17 + Math.floor(Date.now() / 1000) % 97;
     res.json({ persona: generatePersonaDraft(seed) });
   });
 
-  app.post('/api/accounts', requirePermission('manage_fb_accounts', 'manage_nurture'), (req, res) => {
+  app.post('/api/accounts', requireAuth, (req, res) => {
     const name = String(req.body?.name ?? '').trim();
     const fbUid = String(req.body?.fbUid ?? '').trim();
     const cookieData = String(req.body?.cookieData ?? '').trim();
@@ -428,7 +334,7 @@ async function createApp() {
     res.json({ ok: true, id, accounts: listFacebookAccounts() });
   });
 
-  app.put('/api/accounts/:id', requirePermission('manage_fb_accounts'), (req, res) => {
+  app.put('/api/accounts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     const existing = listFacebookAccounts().find((a) => a.id === id);
     if (!existing) {
@@ -455,7 +361,7 @@ async function createApp() {
     res.json({ ok: true, accounts: listFacebookAccounts() });
   });
 
-  app.post('/api/accounts/:id/toggle', requirePermission('manage_fb_accounts'), (req, res) => {
+  app.post('/api/accounts/:id/toggle', requireAuth, (req, res) => {
     const { id } = req.params;
     const existing = listFacebookAccounts().find((a) => a.id === id);
     if (!existing) {
@@ -468,7 +374,7 @@ async function createApp() {
     res.json({ ok: true, accounts: listFacebookAccounts() });
   });
 
-  app.delete('/api/accounts/:id', requirePermission('manage_fb_accounts'), (req, res) => {
+  app.delete('/api/accounts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     const accounts = listFacebookAccounts();
     if (accounts.length <= 1) {
@@ -497,7 +403,7 @@ async function createApp() {
     });
   });
 
-  app.post('/api/groups/search', requirePermission('run_group_finder'), (req, res) => {
+  app.post('/api/groups/search', requireAuth, (req, res) => {
     const keyword = String(req.body?.keyword ?? '').trim();
     const targetCount = Number(req.body?.targetCount ?? 6);
     const autoJoinPublic = req.body?.autoJoinPublic !== false;
@@ -523,7 +429,7 @@ async function createApp() {
     }
   });
 
-  app.post('/api/groups/:id/join', requirePermission('run_group_finder'), (req, res) => {
+  app.post('/api/groups/:id/join', requireAuth, (req, res) => {
     const { id } = req.params;
     const row = db.prepare('SELECT * FROM facebook_groups WHERE id = ?').get(id) as Record<string, unknown> | undefined;
     if (!row) {
@@ -550,14 +456,14 @@ async function createApp() {
     res.json({ ok: true, joinStatus: nextStatus });
   });
 
-  app.delete('/api/datasets/:id', requirePermission('run_group_finder'), (req, res) => {
+  app.delete('/api/datasets/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     db.prepare('DELETE FROM group_datasets WHERE id = ?').run(id);
     broadcastSnapshot();
     res.json({ ok: true });
   });
 
-  app.get('/api/groups/export', requirePermission('run_group_finder', 'view_dashboard'), (req, res) => {
+  app.get('/api/groups/export', requireAuth, (req, res) => {
     const datasetId = typeof req.query.datasetId === 'string' ? req.query.datasetId : undefined;
     const groups = listGroups(datasetId);
     const csv = buildCsvDocument(
@@ -599,7 +505,7 @@ async function createApp() {
     });
   });
 
-  app.post('/api/scanner/start', requirePermission('run_scanner'), (req, res) => {
+  app.post('/api/scanner/start', requireAuth, (req, res) => {
     const datasetId = String(req.body?.datasetId ?? '').trim();
     const trackingKeywordsRaw = req.body?.trackingKeywords;
     const trackingKeywords: string[] = Array.isArray(trackingKeywordsRaw)
@@ -640,13 +546,13 @@ async function createApp() {
     }
   });
 
-  app.post('/api/scanner/stop', requirePermission('run_scanner'), (_req, res) => {
+  app.post('/api/scanner/stop', requireAuth, (_req, res) => {
     stopStream('stream_keyword_scanner');
     addActivityLog('Keyword Scanner', 'warning', 'Đã dừng luồng quét song song theo yêu cầu.');
     res.json({ ok: true });
   });
 
-  app.get('/api/scanner/export', requirePermission('run_scanner', 'view_dashboard'), (req, res) => {
+  app.get('/api/scanner/export', requireAuth, (req, res) => {
     const datasetId = typeof req.query.datasetId === 'string' ? req.query.datasetId : undefined;
     const posts = listScannedPosts(datasetId);
     const csv = buildCsvDocument(
@@ -687,7 +593,7 @@ async function createApp() {
     res.json({ docs: listKnowledgeDocs() });
   });
 
-  app.post('/api/knowledge', requirePermission('manage_ai_rag'), (req, res) => {
+  app.post('/api/knowledge', requireAuth, (req, res) => {
     const title = String(req.body?.title ?? '').trim();
     const category = String(req.body?.category ?? 'Tài liệu sản phẩm').trim();
     const content = String(req.body?.content ?? '').trim();
@@ -712,13 +618,13 @@ async function createApp() {
     res.json({ ok: true, id, docs: listKnowledgeDocs() });
   });
 
-  app.delete('/api/knowledge/:id', requirePermission('manage_ai_rag'), (req, res) => {
+  app.delete('/api/knowledge/:id', requireAuth, (req, res) => {
     db.prepare('DELETE FROM knowledge_docs WHERE id = ?').run(req.params.id);
     broadcastSnapshot();
     res.json({ ok: true, docs: listKnowledgeDocs() });
   });
 
-  app.post('/api/ai/generate-reply', requirePermission('manage_ai_rag'), async (req, res) => {
+  app.post('/api/ai/generate-reply', requireAuth, async (req, res) => {
     const postId = String(req.body?.postId ?? '').trim();
     const toneOverride = typeof req.body?.toneOverride === 'string' ? req.body.toneOverride : undefined;
 
@@ -777,7 +683,7 @@ async function createApp() {
     }
   });
 
-  app.post('/api/ai/save-reply', requirePermission('manage_ai_rag'), (req, res) => {
+  app.post('/api/ai/save-reply', requireAuth, (req, res) => {
     const postId = String(req.body?.postId ?? '').trim();
     const aiReply = String(req.body?.aiReply ?? '').trim();
     const action = String(req.body?.action ?? 'save');
@@ -837,7 +743,7 @@ async function createApp() {
   });
 
   // Module 4 & 5: Streams & Safety Config
-  app.post('/api/streams/:id/toggle', requirePermission('manage_safety', 'run_scanner', 'manage_nurture', 'manage_publisher'), (req, res) => {
+  app.post('/api/streams/:id/toggle', requireAuth, (req, res) => {
     const { id } = req.params;
     const action = String(req.body?.action ?? 'stop');
     if (action === 'stop') {
@@ -861,7 +767,7 @@ async function createApp() {
     });
   });
 
-  app.put('/api/safety', requirePermission('manage_safety'), (req, res) => {
+  app.put('/api/safety', requireAuth, (req, res) => {
     const updated = updateSafetyConfig(req.body ?? {});
     addActivityLog('Safety Guard', 'info', 'Đã cập nhật cấu hình bảo vệ tài khoản & chiến dịch UTM.');
     broadcastSnapshot();
@@ -880,7 +786,7 @@ async function createApp() {
     res.json({ fanpages: listFanpages() });
   });
 
-  app.post('/api/fanpages', requirePermission('manage_nurture'), (req, res) => {
+  app.post('/api/fanpages', requireAuth, (req, res) => {
     const ownerAccountId = String(req.body?.ownerAccountId ?? '').trim();
     const name = String(req.body?.name ?? '').trim();
     const category = String(req.body?.category ?? 'Đồ gia dụng & Bán lẻ').trim();
@@ -939,7 +845,7 @@ async function createApp() {
     res.json({ ok: true, id, fanpages: listFanpages() });
   });
 
-  app.post('/api/fanpages/:id/toggle', requirePermission('manage_nurture'), (req, res) => {
+  app.post('/api/fanpages/:id/toggle', requireAuth, (req, res) => {
     const { id } = req.params;
     const existing = listFanpages().find((p) => p.id === id);
     if (!existing) {
@@ -951,7 +857,7 @@ async function createApp() {
     res.json({ ok: true, fanpages: listFanpages() });
   });
 
-  app.delete('/api/fanpages/:id', requirePermission('manage_nurture'), (req, res) => {
+  app.delete('/api/fanpages/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     db.prepare('DELETE FROM fanpages WHERE id = ?').run(id);
     addActivityLog('Ads Warm-up', 'warning', `Đã xóa Fanpage ${id} khỏi danh sách nuôi Ads.`);
@@ -959,7 +865,7 @@ async function createApp() {
     res.json({ ok: true, fanpages: listFanpages() });
   });
 
-  app.post('/api/warmup/start', requirePermission('manage_nurture'), (req, res) => {
+  app.post('/api/warmup/start', requireAuth, (req, res) => {
     const accountIds = Array.isArray(req.body?.accountIds)
       ? req.body.accountIds.map((id: unknown) => String(id))
       : [];
@@ -975,7 +881,7 @@ async function createApp() {
     }
   });
 
-  app.post('/api/warmup/stop', requirePermission('manage_nurture'), (_req, res) => {
+  app.post('/api/warmup/stop', requireAuth, (_req, res) => {
     stopStream('stream_warmup_worker');
     addActivityLog('Ads Warm-up', 'warning', 'Đã dừng luồng nuôi Nick FB & Fanpage theo yêu cầu.');
     res.json({ ok: true });
@@ -986,7 +892,7 @@ async function createApp() {
     res.json({ posts: listScheduledPosts() });
   });
 
-  app.post('/api/publisher/generate-ai', requirePermission('manage_publisher'), async (req, res) => {
+  app.post('/api/publisher/generate-ai', requireAuth, async (req, res) => {
     const topic = String(req.body?.topic ?? '').trim();
     const goal = String(req.body?.goal ?? 'Nuôi tương tác tự nhiên').trim();
     const tone = String(req.body?.tone ?? 'Tự nhiên như người dùng chia sẻ kinh nghiệm').trim();
@@ -1021,12 +927,12 @@ async function createApp() {
       res.json({ ok: true, ...generated });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Lỗi khi AI sinh bài đăng.';
-      addActivityLog('AI Auto-Publisher', 'error', msg);
+      addActivityLog('AI Content Generator', 'error', msg);
       res.status(500).json({ error: msg });
     }
   });
 
-  app.post('/api/publisher/posts', requirePermission('manage_publisher'), async (req, res) => {
+  app.post('/api/publisher/posts', requireAuth, async (req, res) => {
     const title = String(req.body?.title ?? '').trim() || 'Bài đăng tự động AI';
     const topic = String(req.body?.topic ?? '').trim() || title;
     const goal = String(req.body?.goal ?? 'Nuôi tương tác tự nhiên').trim();
@@ -1094,7 +1000,7 @@ async function createApp() {
     res.json({ ok: true, id, posts: listScheduledPosts() });
   });
 
-  app.post('/api/publisher/posts/:id/publish-now', requirePermission('manage_publisher'), async (req, res) => {
+  app.post('/api/publisher/posts/:id/publish-now', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
       const result = await publishScheduledPostNow(id);
@@ -1104,7 +1010,7 @@ async function createApp() {
     }
   });
 
-  app.post('/api/publisher/posts/:id/toggle-pause', requirePermission('manage_publisher'), (req, res) => {
+  app.post('/api/publisher/posts/:id/toggle-pause', requireAuth, (req, res) => {
     const { id } = req.params;
     const existing = listScheduledPosts().find((p) => p.id === id);
     if (!existing) {
@@ -1117,151 +1023,27 @@ async function createApp() {
     res.json({ ok: true, posts: listScheduledPosts() });
   });
 
-  app.delete('/api/publisher/posts/:id', requirePermission('manage_publisher'), (req, res) => {
+  app.delete('/api/publisher/posts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     db.prepare('DELETE FROM scheduled_posts WHERE id = ?').run(id);
     broadcastSnapshot();
     res.json({ ok: true, posts: listScheduledPosts() });
   });
 
-  // System Administration & RBAC Management Routes
-  app.get('/api/admin/overview', requirePermission('manage_system_admin'), (_req, res) => {
+  // System Settings & SQLite Stats Routes (Single-owner)
+  app.get('/api/admin/overview', requireAuth, (_req, res) => {
     res.json({
-      users: listAdminUsers(),
       systemSettings: getSystemSettings(),
       dbStats: getDatabaseStats(),
     });
   });
 
-  app.post('/api/admin/users', requirePermission('manage_system_admin'), (req, res) => {
-    const username = String(req.body?.username ?? '').trim();
-    const fullName = String(req.body?.fullName ?? '').trim();
-    const password = String(req.body?.password ?? '');
-    const role = String(req.body?.role ?? 'operator') as UserRole;
-    const active = req.body?.active !== false;
-
-    if (!username || !fullName || password.length < 6) {
-      res.status(400).json({
-        error: 'Vui lòng nhập đầy đủ Tên đăng nhập/Email, Họ tên và Mật khẩu (tối thiểu 6 ký tự).',
-      });
-      return;
-    }
-    if (!VALID_ROLES.includes(role)) {
-      res.status(400).json({ error: 'Vai trò (Role) không hợp lệ.' });
-      return;
-    }
-
-    const rawPerms: PermissionKey[] | undefined = Array.isArray(req.body?.permissions)
-      ? (req.body.permissions as unknown[])
-          .map((p: unknown) => String(p))
-          .filter((p: string): p is PermissionKey => VALID_PERMISSION_SET.has(p as PermissionKey))
-      : undefined;
-
-    try {
-      const created = createAdminUser({
-        username,
-        fullName,
-        password,
-        role,
-        permissions: rawPerms,
-        active,
-      });
-      addActivityLog(
-        'System Admin',
-        'success',
-        `Đã tạo tài khoản "${created.username}" với vai trò ${created.role.toUpperCase()}.`
-      );
-      res.json({ ok: true, user: created, users: listAdminUsers() });
-    } catch (err) {
-      res.status(400).json({ error: err instanceof Error ? err.message : 'Không thể tạo tài khoản.' });
-    }
-  });
-
-  app.put('/api/admin/users/:id', requirePermission('manage_system_admin'), (req, res) => {
-    const { id } = req.params;
-    const authUser = (req as AuthedRequest).authUser!;
-    const target = getUserById(id);
-    if (!target) {
-      res.status(404).json({ error: 'Không tìm thấy tài khoản.' });
-      return;
-    }
-
-    const nextRole = req.body?.role !== undefined ? (String(req.body.role) as UserRole) : undefined;
-    if (nextRole && !VALID_ROLES.includes(nextRole)) {
-      res.status(400).json({ error: 'Vai trò (Role) không hợp lệ.' });
-      return;
-    }
-
-    if (id === authUser.id && req.body?.active === false) {
-      res.status(400).json({ error: 'Không thể tự vô hiệu hóa tài khoản đang đăng nhập.' });
-      return;
-    }
-    if (id === authUser.id && nextRole && nextRole !== 'admin') {
-      res.status(400).json({ error: 'Không thể tự hạ quyền tài khoản Admin đang đăng nhập.' });
-      return;
-    }
-
-    const activeAdmins = listAdminUsers().filter((u) => u.role === 'admin' && u.active);
-    const willBeNonAdminOrDisabled =
-      target.role === 'admin' &&
-      target.active &&
-      ((nextRole && nextRole !== 'admin') || req.body?.active === false);
-    if (willBeNonAdminOrDisabled && activeAdmins.length <= 1) {
-      res.status(400).json({ error: 'Hệ thống phải giữ lại ít nhất 1 Quản trị viên (Admin) đang hoạt động.' });
-      return;
-    }
-
-    const rawPerms: PermissionKey[] | undefined = Array.isArray(req.body?.permissions)
-      ? (req.body.permissions as unknown[])
-          .map((p: unknown) => String(p))
-          .filter((p: string): p is PermissionKey => VALID_PERMISSION_SET.has(p as PermissionKey))
-      : undefined;
-
-    const updated = updateAdminUser(id, {
-      fullName: req.body?.fullName !== undefined ? String(req.body.fullName) : undefined,
-      role: nextRole,
-      permissions: rawPerms,
-      active: req.body?.active !== undefined ? Boolean(req.body.active) : undefined,
-      password: req.body?.password !== undefined ? String(req.body.password) : undefined,
-    });
-
+  app.put('/api/admin/settings', requireAuth, (req, res) => {
+    const updated = updateSystemSettings({ ...req.body, maintenanceMode: false });
     addActivityLog(
-      'System Admin',
-      'info',
-      `Đã cập nhật phân quyền cho tài khoản "${updated.username}" (${updated.role.toUpperCase()}).`
-    );
-    res.json({ ok: true, user: updated, users: listAdminUsers() });
-  });
-
-  app.delete('/api/admin/users/:id', requirePermission('manage_system_admin'), (req, res) => {
-    const { id } = req.params;
-    const authUser = (req as AuthedRequest).authUser!;
-    if (id === authUser.id) {
-      res.status(400).json({ error: 'Không thể tự xóa tài khoản đang đăng nhập.' });
-      return;
-    }
-    const target = getUserById(id);
-    if (!target) {
-      res.status(404).json({ error: 'Không tìm thấy tài khoản.' });
-      return;
-    }
-    const activeAdmins = listAdminUsers().filter((u) => u.role === 'admin' && u.active);
-    if (target.role === 'admin' && target.active && activeAdmins.length <= 1) {
-      res.status(400).json({ error: 'Không thể xóa Quản trị viên (Admin) cuối cùng của hệ thống.' });
-      return;
-    }
-
-    deleteAdminUser(id);
-    addActivityLog('System Admin', 'warning', `Đã xóa tài khoản "${target.username}" khỏi hệ thống.`);
-    res.json({ ok: true, users: listAdminUsers() });
-  });
-
-  app.put('/api/admin/settings', requirePermission('manage_system_admin'), (req, res) => {
-    const updated = updateSystemSettings(req.body ?? {});
-    addActivityLog(
-      'System Admin',
+      'Cài đặt Hệ thống',
       'success',
-      `Đã lưu cấu hình Setup hệ thống (${updated.workspaceName}${updated.maintenanceMode ? ' · Chế độ bảo trì BẬT' : ''}).`
+      `Đã lưu cấu hình Workspace (${updated.workspaceName}).`
     );
     res.json({ ok: true, systemSettings: updated, dbStats: getDatabaseStats() });
   });
@@ -1295,6 +1077,7 @@ async function createApp() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
+    process.env.DISABLE_HMR ??= 'true';
     const viteReady = import('vite').then(({ createServer: createViteServer }) =>
       createViteServer({
         server: {
