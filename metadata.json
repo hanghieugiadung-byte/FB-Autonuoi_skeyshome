@@ -1,0 +1,6 @@
+{
+  "name": "SocialPulse FB — Social Listening & Marketing Automation",
+  "description": "Hệ thống Social Listening, Group Finder, Keyword Scanner, AI Content RAG và quản trị rủi ro tự động hóa Facebook.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
