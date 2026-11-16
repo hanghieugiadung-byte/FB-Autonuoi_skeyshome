@@ -1,351 +1,279 @@
-export type GroupType = 'Public' | 'Private';
+import { supabase } from '../supabaseClient';
+import { Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import type { AdminUser, PermissionKey, SystemSettings, UserRole } from '../../shared/types';
+import { saveAuthToken } from '../utils/authToken';
 
-export type PostApprovalPolicy = 'Không cần duyệt' | 'Cần duyệt bài';
-export type CommentApprovalPolicy = 'Tự do bình luận' | 'Kiểm duyệt bình luận';
-
-export type JoinStatus =
-  | 'Chờ tham gia'
-  | 'Đang tham gia'
-  | 'Đã tham gia (Auto-Join)'
-  | 'Chờ duyệt (Private)'
-  | 'Tạm hoãn (Quota)'
-  | 'Lỗi';
-
-export type AdReadinessStatus = 'Chưa sẵn sàng Ads' | 'Đang nuôi Ads' | 'Sẵn sàng chạy Ads';
-
-export interface FacebookAccount {
-  id: string;
-  name: string;
-  fbUid: string;
-  profileUrl: string;
-  cookieStatus: 'Hợp lệ' | 'Cần làm mới';
-  cookieData: string;
-  proxyEndpoint: string;
-  warmupStage: 'Mới (1-7 ngày)' | 'Đang nuôi (8-21 ngày)' | 'Tin cậy (>21 ngày)';
-  warmupDays: number;
-  trustScore: number;
-  adAccountStatus: AdReadinessStatus;
-  recoveryEmail: string;
-  twoFactorSecret: string;
-  lastWarmupAt: string | null;
-  postsPublishedCount: number;
-  maxJoinsPerDay: number;
-  maxCommentsPerDay: number;
-  joinsToday: number;
-  commentsToday: number;
-  enabled: boolean;
-  workerStatus: 'idle' | 'running' | 'paused' | 'error';
-  currentTask: string;
-  createdAt: string;
+interface LoginViewProps {
+  systemSettings: SystemSettings | null;
+  onLoginSuccess: (payload: { user: AdminUser; systemSettings: SystemSettings }) => void;
 }
 
-export interface GroupDataset {
-  id: string;
-  keyword: string;
-  createdAt: string;
-  totalGroups: number;
-  publicCount: number;
-  joinedCount: number;
-  noApprovalCount: number;
-}
+const ALL_PERMISSIONS: PermissionKey[] = [
+  'view_dashboard',
+  'manage_fb_accounts',
+  'manage_nurture',
+  'manage_publisher',
+  'run_group_finder',
+  'run_scanner',
+  'manage_ai_rag',
+  'manage_safety',
+  'manage_system_admin',
+];
 
-export interface FacebookGroup {
-  id: string;
-  datasetId: string;
-  keyword: string;
-  name: string;
-  memberCount: number;
-  groupType: GroupType;
-  postApproval: PostApprovalPolicy;
-  commentApproval: CommentApprovalPolicy;
-  url: string;
-  joinStatus: JoinStatus;
-  accountId: string;
-  accountName: string;
-  joinedAt: string | null;
-  createdAt: string;
-}
+export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
+  const [username, setUsername] = useState('admin@socialpulse.vn');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-export type PostSourceType = 'Post' | 'Comment';
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
 
-export type LeadIntent =
-  | 'Hỏi mua / Cần tư vấn'
-  | 'So sánh giá'
-  | 'Khiếu nại / Vấn đề'
-  | 'Thảo luận chung';
+    if (!username.trim() || !password) {
+      setErrorMsg('Vui lòng nhập đầy đủ Email/Tên đăng nhập và Mật khẩu.');
+      return;
+    }
 
-export type ReplyStatus =
-  | 'Chưa tạo'
-  | 'Đã tạo AI'
-  | 'Đã duyệt (Auto-Comment)'
-  | 'Đã gửi'
-  | 'Đã Copy';
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username.trim(),
+        password: password,
+      });
 
-export interface ScannedPost {
-  id: string;
-  jobId: string;
-  datasetId: string;
-  keywordFound: string;
-  groupName: string;
-  groupId: string;
-  postApproval: PostApprovalPolicy;
-  commentApproval: CommentApprovalPolicy;
-  accountId: string;
-  accountName: string;
-  postType: PostSourceType;
-  directUrl: string;
-  content: string;
-  postedAt: string;
-  authorName: string;
-  intent: LeadIntent;
-  aiReply: string | null;
-  aiCitations: string[];
-  replyStatus: ReplyStatus;
-  createdAt: string;
-}
+      if (error) {
+        setErrorMsg('Lỗi đăng nhập: ' + error.message);
+        return;
+      }
 
-export interface ScanJob {
-  id: string;
-  datasetId: string;
-  datasetKeyword: string;
-  trackingKeywords: string[];
-  accountIds: string[];
-  delayMinSec: number;
-  delayMaxSec: number;
-  status: 'running' | 'paused' | 'stopped' | 'completed';
-  matchedCount: number;
-  scannedGroupsCount: number;
-  totalGroupsCount: number;
-  createdAt: string;
-}
+      if (data.session) {
+        saveAuthToken(data.session.access_token);
+      }
 
-export type KnowledgeSourceType = 'text' | 'document' | 'image' | 'audio' | 'video';
+      // 1. Xác định Role chuẩn chữ thường theo shared/types.ts
+      const emailLower = username.toLowerCase();
+      const userRole: UserRole = emailLower.includes('manager')
+        ? 'manager'
+        : emailLower.includes('operator')
+        ? 'operator'
+        : 'admin';
 
-export interface KnowledgeDoc {
-  id: string;
-  title: string;
-  category: string;
-  content: string;
-  chunkCount: number;
-  sourceType: KnowledgeSourceType;
-  fileName: string | null;
-  mimeType: string | null;
-  fileSize: number | null;
-  updatedAt: string;
-}
+      // 2. Cấp mảng quyền tương ứng với Role
+      const userPermissions: PermissionKey[] =
+        userRole === 'admin'
+          ? ALL_PERMISSIONS
+          : userRole === 'manager'
+          ? ALL_PERMISSIONS.filter((p) => p !== 'manage_system_admin')
+          : ['view_dashboard', 'manage_nurture', 'manage_publisher', 'run_scanner'];
 
-export interface RagChunkMatch {
-  docId: string;
-  docTitle: string;
-  snippet: string;
-  score: number;
-}
+      const now = new Date().toISOString();
 
-export interface SafetyConfig {
-  id: number;
-  accountName: string;
-  accountWarmupStage: 'Mới (1-7 ngày)' | 'Đang nuôi (8-21 ngày)' | 'Tin cậy (>21 ngày)';
-  proxyEndpoint: string;
-  cookiesConfigured: boolean;
-  maxJoinsPerDay: number;
-  maxCommentsPerDay: number;
-  delayMinSec: number;
-  delayMaxSec: number;
-  activeStartHour: number;
-  activeEndHour: number;
-  autoPauseOnWarning: boolean;
-  spintaxVariation: boolean;
-  utmSource: string;
-  utmMedium: string;
-  utmCampaign: string;
-  targetLandingUrl: string;
-}
+      // 3. Khởi tạo AdminUser khớp 100% interface
+      const loggedInUser: AdminUser = {
+        id: data.user?.id || '1',
+        username: username.trim(),
+        fullName:
+          userRole === 'admin'
+            ? 'Quản trị viên Hệ thống'
+            : userRole === 'manager'
+            ? 'Quản lý Vận hành'
+            : 'Nhân viên Vận hành',
+        role: userRole,
+        permissions: userPermissions,
+        active: true,
+        lastLoginAt: now,
+        createdAt: now,
+      };
 
-export interface DailyUsage {
-  date: string;
-  joinsCount: number;
-  commentsCount: number;
-  scansCount: number;
-}
+      // 4. Khởi tạo SystemSettings đầy đủ các trường chuỗi để tránh lỗi .split()
+      const fullSystemSettings: SystemSettings = systemSettings || {
+        id: 1,
+        workspaceName: 'SocialPulse FB',
+        companyName: 'Hệ thống Social Listening & Marketing Automation',
+        defaultTimezone: 'Asia/Ho_Chi_Minh',
+        maxConcurrentWorkers: 5,
+        aiModelName: 'gemini-2.5-flash',
+        autoSchedulerEnabled: true,
+        requireApprovalBeforePost: false,
+        maintenanceMode: false,
+        defaultProxyPool: 'http://127.0.0.1:8080',
+        sessionTimeoutHours: 24,
+        updatedAt: now,
+      };
 
-export type FanpageWarmupStage =
-  | 'Mới tạo (1-7 ngày)'
-  | 'Đang nuôi tương tác (8-21 ngày)'
-  | 'Sẵn sàng chạy Ads';
-
-export interface Fanpage {
-  id: string;
-  ownerAccountId: string;
-  ownerAccountName: string;
-  pageId: string;
-  name: string;
-  category: string;
-  description: string;
-  pageUrl: string;
-  followersCount: number;
-  warmupDays: number;
-  warmupStage: FanpageWarmupStage;
-  trustScore: number;
-  adReadiness: AdReadinessStatus;
-  postsPublishedCount: number;
-  lastWarmupAt: string | null;
-  enabled: boolean;
-  workerStatus: 'idle' | 'running';
-  currentTask: string;
-  createdAt: string;
-}
-
-export type PostGoal =
-  | 'Nuôi tương tác tự nhiên'
-  | 'Bán hàng / Chốt đơn'
-  | 'Review sản phẩm'
-  | 'Chia sẻ kiến thức'
-  | 'Khuyến mãi';
-
-export type PostRecurrence = 'once' | 'daily' | 'every_2_days' | 'weekly';
-
-export type ScheduledPostStatus = 'scheduled' | 'publishing' | 'published' | 'paused' | 'error';
-
-export interface PostTargetRef {
-  type: 'profile' | 'page';
-  id: string;
-  name: string;
-  ownerAccountId: string;
-}
-
-export interface PublishedPostLink {
-  targetId: string;
-  targetName: string;
-  targetType: 'profile' | 'page';
-  url: string;
-  publishedAt: string;
-}
-
-export interface ScheduledPost {
-  id: string;
-  title: string;
-  topic: string;
-  goal: PostGoal;
-  tone: string;
-  useRag: boolean;
-  aiContent: string;
-  hashtags: string[];
-  aiCitations: string[];
-  perTargetVariation: boolean;
-  targets: PostTargetRef[];
-  scheduledAt: string;
-  recurrence: PostRecurrence;
-  status: ScheduledPostStatus;
-  publishedAt: string | null;
-  publishedUrls: PublishedPostLink[];
-  lastError: string | null;
-  createdAt: string;
-}
-
-export interface AutomationStream {
-  id: string;
-  name: string;
-  module: 'group_finder' | 'keyword_scanner' | 'auto_comment' | 'warmup_worker' | 'auto_publisher';
-  status: 'running' | 'paused' | 'stopped';
-  currentAction: string;
-  progress: number;
-  total: number;
-  nextDelaySec: number | null;
-  updatedAt: string;
-}
-
-export interface ActivityLog {
-  id: string;
-  module: string;
-  level: 'info' | 'success' | 'warning' | 'error';
-  message: string;
-  createdAt: string;
-}
-
-export interface DailyChartPoint {
-  date: string;
-  posts: number;
-  comments: number;
-}
-
-export interface KeywordChartPoint {
-  keyword: string;
-  count: number;
-}
-
-export interface DashboardSnapshot {
-  totals: {
-    groupsScanned: number;
-    publicGroupsJoined: number;
-    noApprovalGroups: number;
-    keywordsTracked: number;
-    postsCollected: number;
-    commentsCollected: number;
-    aiRepliesGenerated: number;
-    approvedAutoComments: number;
-    activeAccounts: number;
-    runningAccounts: number;
-    fanpagesCount: number;
-    adsReadyAssetsCount: number;
-    scheduledPostsCount: number;
-    publishedPostsCount: number;
+      onLoginSuccess({
+        user: loggedInUser,
+        systemSettings: fullSystemSettings,
+      });
+    } catch {
+      setErrorMsg('Không thể kết nối tới máy chủ xác thực.');
+    } finally {
+      setSubmitting(false);
+    }
   };
-  dailySeries: DailyChartPoint[];
-  keywordSeries: KeywordChartPoint[];
-  streams: AutomationStream[];
-  accounts: FacebookAccount[];
-  fanpages: Fanpage[];
-  usageToday: DailyUsage;
-  safetyConfig: SafetyConfig;
-  recentLogs: ActivityLog[];
-}
 
-export type UserRole = 'admin' | 'manager' | 'operator' | 'viewer';
+  const fillCredential = (email: string, pass: string) => {
+    setUsername(email);
+    setPassword(pass);
+    setErrorMsg(null);
+  };
 
-export type PermissionKey =
-  | 'view_dashboard'
-  | 'manage_fb_accounts'
-  | 'manage_nurture'
-  | 'manage_publisher'
-  | 'run_group_finder'
-  | 'run_scanner'
-  | 'manage_ai_rag'
-  | 'manage_safety'
-  | 'manage_system_admin';
+  return (
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col justify-center items-center px-4 py-10">
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="mx-auto h-12 w-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+            {systemSettings?.workspaceName || 'SocialPulse FB'}
+          </h1>
+          <p className="text-sm text-slate-600">
+            {systemSettings?.companyName || 'Hệ thống Social Listening & Marketing Automation'}
+          </p>
+        </div>
 
-export interface AdminUser {
-  id: string;
-  username: string;
-  fullName: string;
-  role: UserRole;
-  permissions: PermissionKey[];
-  active: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
-}
+        {/* Maintenance Warning */}
+        {systemSettings?.maintenanceMode && (
+          <div
+            role="status"
+            className="p-3.5 rounded-xl bg-white border-2 border-amber-400 text-xs font-medium text-amber-900"
+          >
+            Hệ thống đang ở chế độ bảo trì. Chỉ tài khoản Quản trị viên (Admin) mới được phép đăng nhập.
+          </div>
+        )}
 
-export interface SystemSettings {
-  id: number;
-  workspaceName: string;
-  companyName: string;
-  defaultTimezone: string;
-  maxConcurrentWorkers: number;
-  aiModelName: string;
-  autoSchedulerEnabled: boolean;
-  requireApprovalBeforePost: boolean;
-  maintenanceMode: boolean;
-  defaultProxyPool: string;
-  sessionTimeoutHours: number;
-  updatedAt: string;
-}
+        {/* Login Form Card */}
+        <div className="bg-white border border-slate-200 border-t-4 border-t-blue-600 rounded-xl p-6 sm:p-8 shadow-xs space-y-5">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-slate-900">
+              Đăng nhập Quản trị Hệ thống
+            </h2>
+            <p className="text-xs text-slate-600 mt-1">
+              Xác thực tài khoản để truy cập Workspace và các phân hệ được phân quyền.
+            </p>
+          </div>
 
-export interface DatabaseStats {
-  accountsCount: number;
-  fanpagesCount: number;
-  groupsCount: number;
-  postsCount: number;
-  knowledgeDocsCount: number;
-  scheduledPostsCount: number;
-  logsCount: number;
-  usersCount: number;
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="login-username"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                Email / Tên đăng nhập
+              </label>
+              <div className="relative">
+                <Mail className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="login-username"
+                  type="text"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="admin@socialpulse.vn"
+                  className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="login-password"
+                className="block text-xs font-semibold text-slate-800 mb-1.5"
+              >
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <Lock className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu..."
+                  className="w-full h-10 pl-9 pr-10 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div
+                role="alert"
+                className="px-3.5 py-2.5 rounded-lg bg-white border border-red-300 text-xs font-medium text-red-700"
+              >
+                {errorMsg}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold transition-colors"
+            >
+              <KeyRound className="h-4 w-4" />
+              <span>{submitting ? 'Đang xác thực...' : 'Đăng nhập Hệ thống'}</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Initial Setup Credentials Helper */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+          <div className="text-xs font-semibold text-slate-800">
+            Tài khoản Setup mặc định (Nhấn để điền nhanh &amp; kiểm thử phân quyền):
+          </div>
+          <div className="grid grid-cols-1 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => fillCredential('admin@socialpulse.vn', 'Admin@123456')}
+              className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-blue-200 bg-white hover:border-blue-400 text-left"
+            >
+              <div>
+                <div className="font-semibold text-blue-800">Quản trị viên (Admin - Toàn quyền)</div>
+                <div className="font-mono text-slate-700 mt-0.5">
+                  admin@socialpulse.vn · Admin@123456
+                </div>
+              </div>
+              <span className="font-semibold text-blue-700 shrink-0">Chọn</span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => fillCredential('manager@socialpulse.vn', 'Manager@123')}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:border-indigo-400 text-left"
+              >
+                <div className="font-semibold text-indigo-800">Manager</div>
+                <div className="font-mono text-[11px] text-slate-700 truncate">
+                  manager@socialpulse.vn
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => fillCredential('operator@socialpulse.vn', 'Operator@123')}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:border-teal-400 text-left"
+              >
+                <div className="font-semibold text-teal-800">Operator</div>
+                <div className="font-mono text-[11px] text-slate-700 truncate">
+                  operator@socialpulse.vn
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
