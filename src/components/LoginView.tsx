@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient';
 import { Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import type { AdminUser, SystemSettings } from '../../shared/types';
-import { saveAuthToken } from '../utils/authToken'; // Đã bỏ apiFetch vì dùng Supabase
+import { saveAuthToken } from '../utils/authToken';
 
 interface LoginViewProps {
   systemSettings: SystemSettings | null;
@@ -27,34 +27,37 @@ export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
 
     setSubmitting(true);
     try {
-      // 1. Gọi Supabase để xác thực Email và Password
+      // 1. Gọi Supabase để xác thực tài khoản
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username.trim(),
         password: password,
       });
 
-      // 2. Xử lý lỗi nếu sai tài khoản/mật khẩu
       if (error) {
         setErrorMsg('Lỗi đăng nhập: ' + error.message);
         return;
       }
 
-      // 3. Đăng nhập thành công, lưu token của Supabase
+      // 2. Lưu token xác thực phiên làm việc
       if (data.session) {
         saveAuthToken(data.session.access_token);
       }
 
-      // 4. Khởi tạo User giả lập theo chuẩn AdminUser của hệ thống cũ để App không bị lỗi
+      // 3. Tự động nhận diện và gán đúng quyền (Role) chữ IN HOA cho hệ thống
+      const emailLower = username.toLowerCase();
+      const userRole = emailLower.includes('manager') ? 'MANAGER' : 
+                       emailLower.includes('operator') ? 'OPERATOR' : 'ADMIN';
+
       const loggedInUser = {
         id: data.user?.id || '1',
         email: data.user?.email || username.trim(),
         username: username.trim(),
-        role: 'admin',
-        fullName: 'Quản trị viên',
+        role: userRole, // Đảm bảo quyền in hoa khớp với logic app cũ
+        fullName: userRole === 'ADMIN' ? 'Quản trị viên' : userRole === 'MANAGER' ? 'Quản lý' : 'Nhân viên vận hành',
         status: 'active'
       } as AdminUser;
 
-      // 5. Kích hoạt luồng chuyển trang của React
+      // 4. Chuyển hướng vào trong ứng dụng
       onLoginSuccess({ 
         user: loggedInUser, 
         systemSettings: systemSettings || ({} as SystemSettings) 
