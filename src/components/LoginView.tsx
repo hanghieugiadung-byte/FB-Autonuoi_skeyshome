@@ -1,7 +1,8 @@
+import { supabase } from '../supabaseClient';
 import { Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import type { AdminUser, SystemSettings } from '../../shared/types';
-import { apiFetch, saveAuthToken } from '../utils/authToken';
+import { saveAuthToken } from '../utils/authToken'; // Đã bỏ apiFetch vì dùng Supabase
 
 interface LoginViewProps {
   systemSettings: SystemSettings | null;
@@ -18,6 +19,7 @@ export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    
     if (!username.trim() || !password) {
       setErrorMsg('Vui lòng nhập đầy đủ Email/Tên đăng nhập và Mật khẩu.');
       return;
@@ -25,21 +27,40 @@ export function LoginView({ systemSettings, onLoginSuccess }: LoginViewProps) {
 
     setSubmitting(true);
     try {
-      const res = await apiFetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+      // 1. Gọi Supabase để xác thực Email và Password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username.trim(),
+        password: password,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMsg(data.error || 'Đăng nhập không thành công.');
+
+      // 2. Xử lý lỗi nếu sai tài khoản/mật khẩu
+      if (error) {
+        setErrorMsg('Lỗi đăng nhập: ' + error.message);
         return;
       }
-      if (data.token) {
-        saveAuthToken(String(data.token));
+
+      // 3. Đăng nhập thành công, lưu token của Supabase
+      if (data.session) {
+        saveAuthToken(data.session.access_token);
       }
-      onLoginSuccess({ user: data.user, systemSettings: data.systemSettings });
-    } catch {
+
+      // 4. Khởi tạo User giả lập theo chuẩn AdminUser của hệ thống cũ để App không bị lỗi
+      const loggedInUser = {
+        id: data.user?.id || '1',
+        email: data.user?.email || username.trim(),
+        username: username.trim(),
+        role: 'admin',
+        fullName: 'Quản trị viên',
+        status: 'active'
+      } as AdminUser;
+
+      // 5. Kích hoạt luồng chuyển trang của React
+      onLoginSuccess({ 
+        user: loggedInUser, 
+        systemSettings: systemSettings || ({} as SystemSettings) 
+      });
+
+    } catch (err: any) {
       setErrorMsg('Không thể kết nối tới máy chủ xác thực.');
     } finally {
       setSubmitting(false);
