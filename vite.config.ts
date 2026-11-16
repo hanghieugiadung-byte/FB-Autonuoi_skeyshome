@@ -4,10 +4,10 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig(() => {
-  return {
-    plugins: [
-      react(),
+export default defineConfig({
+  base: "/FB-Autonuoi_skeyshome/",
+  plugins: [react()],
+})
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
